@@ -1,0 +1,15 @@
+repos:
+  - repo: https://github.com/dnephin/pre-commit-golang
+    rev: v0.5.1
+    hooks:
+      - id: go-fmt
+
+  # go.modが存在するディレクトリで実施しないとエラーになるため
+  - repo: local
+    hooks:
+      - id: go-vet-tasks
+        name: go vet (go-learning)
+        entry: bash -c 'cd tasks && go vet ./...'
+        language: system
+        files: ^tasks/.*\.go$
+        pass_filenames: false

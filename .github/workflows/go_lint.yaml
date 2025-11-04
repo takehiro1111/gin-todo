@@ -1,0 +1,57 @@
+name: go linter
+run-name: ${{ github.workflow }} by @${{ github.actor }}
+
+on:
+  pull_request:
+    types:
+      - opened # PR新規作成時
+      - synchronize # PR更新時
+      - reopened # PR再オープン時
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+  actions: read
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        dir:
+          - tasks/
+    defaults:
+      run:
+        working-directory: ${{ matrix.dir }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Golang
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: ${{ matrix.dir }}/go.mod
+          cache: true
+          cache-dependency-path: |
+            **/go.sum
+            **/go.mod
+      - name: Install Dependencies
+        run: go mod download
+      - name: fmt
+        run: |
+          diff_output=$(gofmt -l .)
+          if [ -n "$diff_output" ]; then
+            echo "::error file=fmt::Go code is not formatted. Run 'gofmt -w .' to fix."
+            echo "$diff_output"
+            exit 1
+          fi
+          echo "Go fmt check passed."
+      # - name: golangci-lint
+      #   uses: golangci/golangci-lint-action@v8
+      #   with:
+      #     version: v2.1
+      #     working-directory: ${{ matrix.dir }}

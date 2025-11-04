@@ -1,0 +1,8 @@
+.vscode/**
+
+**/tmp/build-errors.log
+**/tmp/main
+**/session.txt
+**/node_modules/
+
+**/*.pem
