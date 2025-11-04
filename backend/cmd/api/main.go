@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
+	"net/http"
 
 	_ "github.com/take/gin-todo/docs"
 )
@@ -53,7 +54,7 @@ func main() {
 // @Success      200 {object} map[string]string
 // @Router       /hello [get]
 func HelloWorld(c *gin.Context) {
-	c.JSON(200, gin.H{
+	c.JSON(http.StatusOK, gin.H{
 		"message": "Hello World!",
 	})
 }
@@ -66,7 +67,7 @@ func HelloWorld(c *gin.Context) {
 // @Success      200 {object} map[string]string
 // @Router       /health [get]
 func HealthCheck(c *gin.Context) {
-	c.JSON(200, gin.H{
+	c.JSON(http.StatusOK, gin.H{
 		"status": "ok",
 	})
 }
