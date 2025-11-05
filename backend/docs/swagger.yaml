@@ -1,0 +1,53 @@
+basePath: /api/v1
+host: localhost:8080
+info:
+  contact:
+    email: support@example.com
+    name: API Support
+  description: タスク管理APIのフルスタックアプリケーション
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: http://swagger.io/terms/
+  title: Gin Todo API
+  version: "1.0"
+paths:
+  /health:
+    get:
+      description: APIサーバーの稼働状態を確認
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: ヘルスチェック
+      tags:
+      - health
+  /hello:
+    get:
+      consumes:
+      - application/json
+      description: 簡単なHello Worldエンドポイント
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Hello World
+      tags:
+      - example
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
