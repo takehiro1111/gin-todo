@@ -310,6 +310,7 @@ npm run format
 - `name` (varchar)
 - `role` (varchar: user/admin)
 - `created_at` (timestamp)
+- `updated_at` (timestamp)
 
 ### Task
 - `id` (bigserial, PK)
@@ -324,3 +325,10 @@ npm run format
 
 ## Reference
 https://gin-gonic.com/ja/docs/
+
+
+## DBへの接続
+```zsh
+psql -u gin -h localhost -d gin-todo
+```
+
