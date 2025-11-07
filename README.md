@@ -308,7 +308,7 @@ npm run format
 - `email` (varchar, unique)
 - `password_hash` (varchar)
 - `name` (varchar)
-- `role` (varchar: user/admin)
+- `role` (varchar: admin/writer/viewer)
 - `created_at` (timestamp)
 - `updated_at` (timestamp)
 
@@ -329,6 +329,6 @@ https://gin-gonic.com/ja/docs/
 
 ## DBへの接続
 ```zsh
-psql -u gin -h localhost -d gin-todo
+psql -U gin -h localhost -d gin-todo
 ```
 
