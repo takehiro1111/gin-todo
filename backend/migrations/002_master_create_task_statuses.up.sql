@@ -1,4 +1,4 @@
-BEGIN
+
 
 DROP TABLE IF EXISTS task_statuses;
 
@@ -10,13 +10,8 @@ CREATE TABLE IF NOT EXISTS task_statuses (
   is_active BOOLEAN NOT NULL DEFAULT true,  -- 論理削除フラグ
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  deleted_at TIMESTAMP DEFAULT NULL,
+  deleted_at TIMESTAMP DEFAULT NULL
 );
 
 CREATE UNIQUE INDEX idx_task_statuses_name ON task_statuses(name);
 CREATE INDEX idx_task_statuses_display_order ON task_statuses(display_order);
-
-COMMIT;
-
--- 変更を取り消したい場合に使用する。
--- ROLLBACK;

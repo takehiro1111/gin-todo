@@ -1,4 +1,3 @@
-BEGIN
 
 DROP TABLE IF EXISTS user_roles;
 
@@ -9,13 +8,9 @@ CREATE TABLE IF NOT EXISTS user_roles (
   is_active BOOLEAN NOT NULL DEFAULT true,  -- 論理削除フラグ
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  deleted_at TIMESTAMP DEFAULT NULL,
+  deleted_at TIMESTAMP DEFAULT NULL
 );
 
 CREATE INDEX idx_user_roles_name ON user_roles(name);
 CREATE INDEX idx_user_roles_display_order ON user_roles(display_order);
 
-COMMIT;
-
--- 変更を取り消したい場合に使用する。
--- ROLLBACK;

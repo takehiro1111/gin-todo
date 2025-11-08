@@ -215,10 +215,6 @@ go install github.com/cosmtrek/air@latest
 cp .env.example .env
 # .env を編集してDB接続情報やJWT秘密鍵を設定
 
-# データベースマイグレーション
-psql -U postgres -d todo_db -f migrations/001_create_users.sql
-psql -U postgres -d todo_db -f migrations/002_create_tasks.sql
-
 # 開発サーバー起動 (ホットリロード)
 air
 
@@ -367,3 +363,23 @@ psql -U gin -h localhost -d gin-todo
 
 ### フェーズ4: CI/CD
 - [ ] GithubActions
+
+
+## Swagger生成
+cd backend
+swag init -g cmd/api/main.go -o docs
+
+## migrationで以下のエラーになった場合
+```zsh
+
+2025/11/08 19:38:26 db initialization failed: migration failed: Dirty database version 2. Fix and force version.
+exit status 1
+
+# 以下コマンドを実行
+# dirtyフラグを強制的にfalseに書き換えている。
+# migration実行時にdrop tableしているのでこれでも良い。
+# そもそも本番環境はmigration使わない方が良い。
+$psql -U gin -d gin-todo -h localhost -p 5432 -c "UPDATE schema_migrations SET dirty = false;"
+Password for user gin:
+UPDATE 1
+```

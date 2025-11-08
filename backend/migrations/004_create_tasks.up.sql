@@ -1,4 +1,4 @@
-BEGIN
+
 
 DROP TABLE IF EXISTS tasks;
 
@@ -28,8 +28,3 @@ CREATE TABLE IF NOT EXISTS tasks (
 CREATE INDEX idx_tasks_status_id ON tasks(status_id);
 CREATE INDEX idx_tasks_user_id ON tasks(user_id);
 CREATE INDEX idx_tasks_due_date ON tasks(due_date);
-
-COMMIT;
-
--- 変更を取り消したい場合に使用する。
--- ROLLBACK;

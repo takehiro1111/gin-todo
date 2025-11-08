@@ -1,4 +1,3 @@
-BEGIN
 
 DROP TABLE IF EXISTS users;
 
@@ -21,8 +20,3 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE INDEX idx_users_name ON users(name);
 CREATE UNIQUE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_role_id ON users(role_id);
-
-COMMIT;
-
--- 変更を取り消したい場合に使用する。
--- ROLLBACK;
