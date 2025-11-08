@@ -27,6 +27,15 @@ services:
     restart: always
     ports:
       - 9090:8080
+    networks:
+      - todo-network
     depends_on:
       gin-todo-postgres:
         condition: service_healthy
+    
+volumes:
+  db-store:
+
+networks:
+  todo-network: 
+    driver: bridge
