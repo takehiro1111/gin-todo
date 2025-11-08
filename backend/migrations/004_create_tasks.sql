@@ -9,10 +9,10 @@ CREATE TABLE IF NOT EXISTS tasks (
   description TEXT,
   status_id BIGINT NOT NULL DEFAULT 1, -- task_statuses.idへの外部キー
   priority VARCHAR(30) NOT NULL DEFAULT 'medium',
-  due_date TIMESTAMP,
+  due_date TIMESTAMP NULL, -- 期限のため未定義のケースを想定
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  deleted_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  deleted_at TIMESTAMP DEFAULT NULL,
   
   CONSTRAINT fk_tasks_user_id 
     FOREIGN KEY (user_id) 
