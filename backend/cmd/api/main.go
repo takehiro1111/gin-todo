@@ -37,6 +37,8 @@ func main() {
 	if err != nil {
 		log.Fatal("failed read .env")
 	}
+
+	// 後工程でSSMパラメータストアから取得する実装に変更予定
 	dbUser := os.Getenv("POSTGRES_USER")
 	dbPassword := os.Getenv("POSTGRES_PASSWORD")
 	dbName := os.Getenv("POSTGRES_DB_NAME")
@@ -49,6 +51,13 @@ func main() {
 	_, err = models.DBInit(dbUser, dbPassword, dbHost, dbPort, dbName, sslMode, tz)
 	if err != nil {
 		log.Fatalf("db initialization failed: %v", err)
+	}
+
+	// 後工程で本番環境は実行しないよう修正する
+	err = models.RunMigration(dbUser, dbPassword, dbHost, dbPort, dbName, sslMode)
+	// マイグレーションで変更のない場合はエラーにしない(migrate.ErrNoChange)
+	if err != nil {
+		log.Fatalf("migration failed: %v", err)
 	}
 
 	// API v1 routes

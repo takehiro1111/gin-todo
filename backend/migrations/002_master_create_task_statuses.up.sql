@@ -1,7 +1,3 @@
-
-
-DROP TABLE IF EXISTS task_statuses;
-
 CREATE TABLE IF NOT EXISTS task_statuses (
   id BIGSERIAL PRIMARY KEY,
   name VARCHAR(30) NOT NULL,  -- 'todo', 'in_progress', 'done', 'archived'

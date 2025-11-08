@@ -18,16 +18,10 @@ func DBInit(user, passWord, host, port, dbName, sslMode, tz string) (*gorm.DB, e
 		return nil, fmt.Errorf("database connection failed:%w", err)
 	}
 
-	err = runMigration(user, passWord, host, port, dbName, sslMode)
-	// マイグレーションで変更のない場合はエラーにしない(migrate.ErrNoChange)
-	if err != nil && err != migrate.ErrNoChange {
-		return nil, fmt.Errorf("migration failed: %w", err)
-	}
-
 	return db, nil
 }
 
-func runMigration(user, password, host, port, dbName, sslMode string) error {
+func RunMigration(user, password, host, port, dbName, sslMode string) error {
 	dbUrl := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s", user, password, host, port, dbName, sslMode)
 	m, err := migrate.New(
 		"file://migrations",
@@ -36,7 +30,13 @@ func runMigration(user, password, host, port, dbName, sslMode string) error {
 	if err != nil {
 		return err
 	}
+
 	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+		log.Println("Migration failed, rolling back...")
+		// マイグレーションに失敗した際はテーブルを削除する
+		if downErr := m.Down(); downErr != nil {
+			return fmt.Errorf("migration failed and rollback failed: %w, %v", err, downErr)
+		}
 		return err
 	}
 

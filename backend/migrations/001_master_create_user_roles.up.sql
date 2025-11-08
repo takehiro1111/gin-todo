@@ -1,6 +1,3 @@
-
-DROP TABLE IF EXISTS user_roles;
-
 CREATE TABLE IF NOT EXISTS user_roles (
   id BIGSERIAL PRIMARY KEY,
   name VARCHAR(30) NOT NULL CHECK(name IN('admin','writer','viewer')) ,
