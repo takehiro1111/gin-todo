@@ -1,15 +1,17 @@
 package main
 
 import (
-	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
-	swaggerFiles "github.com/swaggo/files"
-	ginSwagger "github.com/swaggo/gin-swagger"
+	"context"
 	"log"
 	"net/http"
-	"os"
 
+	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
+
+	"github.com/takehiro1111/gin-todo/backend/infrastructure/aws"
 	"github.com/takehiro1111/gin-todo/backend/internal/models"
+	"github.com/takehiro1111/gin-todo/backend/internal/services"
 )
 
 // @title           Gin Todo API
@@ -33,18 +35,28 @@ import (
 func main() {
 	r := gin.Default()
 
-	err := godotenv.Load("cmd/api/.env")
+	ssmClient, err := aws.NewSSMParameterStoreClient()
 	if err != nil {
-		log.Fatal("failed read .env")
+		log.Fatalf("failed generate ssmClient: %v", err)
+	}
+	ctx := context.Background()
+	params, err := services.GetParameters(ssmClient, ctx)
+	if err != nil {
+		log.Fatalf("failed get ssmParameters: %v", err)
 	}
 
-	// 後工程でSSMパラメータストアから取得する実装に変更予定
-	dbUser := os.Getenv("POSTGRES_USER")
-	dbPassword := os.Getenv("POSTGRES_PASSWORD")
-	dbName := os.Getenv("POSTGRES_DB_NAME")
-	dbPort := os.Getenv("POSTGRES_DB_PORT")
-	dbHost := os.Getenv("POSTGRES_DB_HOST")
-	sslMode := os.Getenv("POSTGRES_DB_SSL_MODE")
+	items := make(map[string]string)
+	for _, param := range params.Parameters {
+		log.Println(*param.Name, *param.Value)
+		items[*param.Name] = *param.Value
+	}
+
+	dbUser := items[services.PostgresUser]
+	dbPassword := items[services.PostgresPassword]
+	dbName := items[services.PostgresDBName]
+	dbPort := items[services.PostgresDBPort]
+	dbHost := items[services.PostgresDBHost]
+	sslMode := items[services.PostgresSslMode]
 	tz := "Asia/Tokyo"
 
 	// 後工程で戻り値を活用する
