@@ -35,19 +35,18 @@ import (
 func main() {
 	r := gin.Default()
 
-	ssmClient, err := aws.NewSSMParameterStoreClient()
+	ssmClient, err := aws.NewSSMClient()
 	if err != nil {
-		log.Fatalf("failed generate ssmClient: %v", err)
+		log.Fatalf("failed to generate ssmClient: %v", err)
 	}
 	ctx := context.Background()
 	params, err := services.GetParameters(ssmClient, ctx)
 	if err != nil {
-		log.Fatalf("failed get ssmParameters: %v", err)
+		log.Fatalf("failed to get ssmParameters: %v", err)
 	}
 
 	items := make(map[string]string)
 	for _, param := range params.Parameters {
-		log.Println(*param.Name, *param.Value)
 		items[*param.Name] = *param.Value
 	}
 

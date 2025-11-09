@@ -8,7 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
 )
 
-func NewSSMParameterStoreClient() (*ssm.Client, error) {
+func NewSSMClient() (*ssm.Client, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
