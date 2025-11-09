@@ -215,10 +215,6 @@ go install github.com/cosmtrek/air@latest
 cp .env.example .env
 # .env を編集してDB接続情報やJWT秘密鍵を設定
 
-# データベースマイグレーション
-psql -U postgres -d todo_db -f migrations/001_create_users.sql
-psql -U postgres -d todo_db -f migrations/002_create_tasks.sql
-
 # 開発サーバー起動 (ホットリロード)
 air
 
@@ -332,3 +328,58 @@ https://gin-gonic.com/ja/docs/
 psql -U gin -h localhost -d gin-todo
 ```
 
+## 実装順序
+### フェーズ1: バックエンド基盤構築
+- [x] 1. DB接続確認、ダミーデータの挿入
+- [x] 2. モデル層（Model/Entity）の実装
+  - [x] User, Task, TaskStatus, UserRole の構造体定義
+- [ ] 3. DB接続設定とリポジトリ基盤
+  - [ ] database.go（DB接続プール）
+  - [ ] リポジトリのインターフェース定義
+- [ ] 4. リポジトリ層（Repository/DAO）の実装
+  - [ ] 基本的なCRUD操作の実装
+  - [ ] ユニットテストも並行して作成
+- [ ] 5. API層（Handler/Controller）の基本実装（認証なし）
+  - [ ] 基本的なエンドポイント定義（GET /tasks, POST /tasks など）
+  - [ ] リクエスト/レスポンス処理
+  - [ ] Postmanで動作確認
+- [ ] 6. 認証・認可の実装
+  - [ ] JWT トークン生成/検証
+  - [ ] パスワードハッシュ化
+  - [ ] ミドルウェア（認証チェック、ロール権限チェック）
+  - [ ] 既存のエンドポイントに認証を追加
+- [ ] 7. サービス層（Business Logic）の実装
+  - [ ] ビジネスロジックの実装
+  - [ ] バリデーション
+  - [ ] エラーハンドリング
+
+### フェーズ2: フロントエンド実装
+- [ ] フロントエンド開発
+  - [ ] UI実装
+  - [ ] APIとの統合
+
+### フェーズ3: インフラ実装(並行して作る)
+- [ ] EKSのpodへデプロイ
+
+### フェーズ4: CI/CD
+- [ ] GithubActions
+
+
+## Swagger生成
+cd backend
+swag init -g cmd/api/main.go -o docs
+
+## migrationで以下のエラーになった場合
+```zsh
+
+2025/11/08 19:38:26 db initialization failed: migration failed: Dirty database version 2. Fix and force version.
+exit status 1
+
+# 以下コマンドを実行
+# dirtyフラグを強制的にfalseに書き換えている。
+# migration実行時にdrop tableしているのでこれでも良い。
+# そもそも本番環境はmigration使わない方が良い。
+$psql -U gin -d gin-todo -h localhost -p 5432 -c "UPDATE schema_migrations SET dirty = false;"
+Password for user gin:
+UPDATE 1
+```
