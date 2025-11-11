@@ -40,7 +40,7 @@ func main() {
 		log.Fatalf("failed to generate ssmClient: %v", err)
 	}
 	ctx := context.Background()
-	params, err := services.GetParameters(ssmClient, ctx)
+	params, err := services.GetDBAuthenticate(ssmClient, ctx)
 	if err != nil {
 		log.Fatalf("failed to get ssmParameters: %v", err)
 	}
