@@ -333,7 +333,7 @@ psql -U gin -h localhost -d gin-todo
 - [x] 1. DB接続確認、ダミーデータの挿入
 - [x] 2. モデル層（Model/Entity）の実装
   - [x] User, Task, TaskStatus, UserRole の構造体定義
-- [ ] 3. DB接続設定とリポジトリ基盤
+- [x] 3. DB接続設定とリポジトリ基盤
   - [ ] database.go（DB接続プール）
   - [ ] リポジトリのインターフェース定義
 - [ ] 4. リポジトリ層（Repository/DAO）の実装

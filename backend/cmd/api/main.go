@@ -4,11 +4,13 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 
+	"github.com/joho/godotenv"
 	"github.com/takehiro1111/gin-todo/backend/infrastructure/aws"
 	"github.com/takehiro1111/gin-todo/backend/internal/models"
 	"github.com/takehiro1111/gin-todo/backend/internal/services"
@@ -45,6 +47,9 @@ func main() {
 		log.Fatalf("failed to get ssmParameters: %v", err)
 	}
 
+	envLoad()
+	env := os.Getenv("ENV")
+
 	items := make(map[string]string)
 	for _, param := range params.Parameters {
 		items[*param.Name] = *param.Value
@@ -59,7 +64,7 @@ func main() {
 	tz := "Asia/Tokyo"
 
 	// 後工程で戻り値を活用する
-	_, err = models.DBInit(dbUser, dbPassword, dbHost, dbPort, dbName, sslMode, tz)
+	_, err = models.DBInit(dbUser, dbPassword, dbHost, dbPort, dbName, sslMode, tz, env)
 	if err != nil {
 		log.Fatalf("db initialization failed: %v", err)
 	}
@@ -111,4 +116,11 @@ func HealthCheck(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status": "ok",
 	})
+}
+
+func envLoad() {
+	err := godotenv.Load(".env")
+	if err != nil {
+		log.Fatalf("Error loading env target")
+	}
 }
