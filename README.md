@@ -329,29 +329,243 @@ psql -U gin -h localhost -d gin-todo
 ```
 
 ## 実装順序
+- 業務時間外で対応するため、挫折や塩漬けでてをつけなくなることを極力回避するため、予め細かい粒度で実装順序を記述している。
+  - ファイル名、内容、順序については開発しながら必要に応じて都度修正する。
 ### フェーズ1: バックエンド基盤構築
-- [x] 1. DB接続確認、ダミーデータの挿入
-- [x] 2. モデル層（Model/Entity）の実装
-  - [x] User, Task, TaskStatus, UserRole の構造体定義
-- [x] 3. DB接続設定とリポジトリ基盤
-  - [x] database.go（DB接続プール）
-  - [ ] リポジトリのインターフェース定義
-- [ ] 4. リポジトリ層（Repository/DAO）の実装
-  - [ ] 基本的なCRUD操作の実装
-  - [ ] ユニットテストも並行して作成
-- [ ] 5. API層（Handler/Controller）の基本実装（認証なし）
-  - [ ] 基本的なエンドポイント定義（GET /tasks, POST /tasks など）
-  - [ ] リクエスト/レスポンス処理
-  - [ ] Postmanで動作確認
-- [ ] 6. 認証・認可の実装
-  - [ ] JWT トークン生成/検証
-  - [ ] パスワードハッシュ化
-  - [ ] ミドルウェア（認証チェック、ロール権限チェック）
-  - [ ] 既存のエンドポイントに認証を追加
-- [ ] 7. サービス層（Business Logic）の実装
-  - [ ] ビジネスロジックの実装
-  - [ ] バリデーション
-  - [ ] エラーハンドリング
+#### 1. DB接続確認、ダミーデータの挿入
+- [x] PostgreSQL起動確認
+- [x] psqlでDB接続確認
+- [x] テーブル作成（users, tasks）
+- [x] ダミーデータINSERT
+
+#### 2. モデル層（Model/Entity）の実装
+- [x] `internal/models/user.go` - User構造体定義
+- [x] `internal/models/user_role.go` - UserRole型定義
+- [x] `internal/models/task.go` - Task構造体定義
+- [x] `internal/models/task_status.go` - TaskStatus型定義
+
+#### 3. DB接続設定とリポジトリ基盤
+- [x] `internal/models/database.go` - InitDB()関数実装（GORM接続）
+- [x] `internal/models/database.go` - AutoMigrate実行
+- [ ] `internal/repositories/user_repository.go` - UserRepositoryインターフェース定義
+- [ ] `internal/repositories/task_repository.go` - TaskRepositoryインターフェース定義
+- [ ] `internal/repositories/task_repository.go` - TaskFilters構造体定義
+
+#### 4. リポジトリインターフェース定義
+- [ ] `internal/repositories/user_repository.go` - UserRepository インターフェース定義
+- [ ] `internal/repositories/task_repository.go` - TaskRepository インターフェース定義
+- [ ] `internal/repositories/task_repository.go` - TaskFilters 構造体定義
+
+---
+
+#### 5. 認証基盤の先行実装
+
+##### 5-1. パスワードハッシュ化
+- [ ] `internal/utils/password.go` - HashPassword() 関数実装
+- [ ] `internal/utils/password.go` - CheckPassword() 関数実装
+
+##### 5-2. JWT トークン生成/検証
+- [ ] `internal/utils/jwt.go` - Claims 構造体定義
+- [ ] `internal/utils/jwt.go` - GenerateAccessToken() 実装
+- [ ] `internal/utils/jwt.go` - GenerateRefreshToken() 実装
+- [ ] `internal/utils/jwt.go` - ValidateToken() 実装
+
+##### 5-3. 認証ミドルウェア
+- [ ] `internal/middleware/auth.go` - AuthMiddleware() 実装（JWT検証）
+- [ ] `internal/middleware/auth.go` - RoleMiddleware() 実装（Admin権限チェック）
+
+---
+
+#### 6. サービス層の実装
+
+##### 6-1. UserService（認証ロジック）
+- [ ] `internal/services/auth_service.go` - AuthService 構造体定義
+- [ ] `internal/services/auth_service.go` - Register() メソッド実装
+- [ ] `internal/services/auth_service.go` - Login() メソッド実装
+- [ ] `internal/services/auth_service.go` - RefreshToken() メソッド実装
+- [ ] `internal/services/auth_service.go` - Logout() メソッド実装
+
+##### 6-2. TaskService（ビジネスロジック）
+- [ ] `internal/services/task_service.go` - TaskService 構造体定義
+- [ ] `internal/services/task_service.go` - CreateTask() メソッド実装
+- [ ] `internal/services/task_service.go` - GetTaskByID() メソッド実装（権限チェック含む）
+- [ ] `internal/services/task_service.go` - GetTasksByUserID() メソッド実装
+- [ ] `internal/services/task_service.go` - UpdateTask() メソッド実装（権限チェック含む）
+- [ ] `internal/services/task_service.go` - UpdateTaskStatus() メソッド実装
+- [ ] `internal/services/task_service.go` - DeleteTask() メソッド実装（権限チェック含む）
+
+---
+
+#### 7. リポジトリ層の実装
+
+##### 7-1. UserRepository 実装
+- [ ] `internal/repositories/user_repository_impl.go` - userRepositoryImpl 構造体定義
+- [ ] `internal/repositories/user_repository_impl.go` - NewUserRepository() コンストラクタ
+- [ ] `internal/repositories/user_repository_impl.go` - Create() メソッド実装
+- [ ] `internal/repositories/user_repository_impl.go` - FindByID() メソッド実装
+- [ ] `internal/repositories/user_repository_impl.go` - FindByEmail() メソッド実装
+- [ ] `internal/repositories/user_repository_impl.go` - FindAll() メソッド実装
+- [ ] `internal/repositories/user_repository_impl.go` - Update() メソッド実装
+- [ ] `internal/repositories/user_repository_impl.go` - Delete() メソッド実装
+
+##### 7-2. TaskRepository 実装
+- [ ] `internal/repositories/task_repository_impl.go` - taskRepositoryImpl 構造体定義
+- [ ] `internal/repositories/task_repository_impl.go` - NewTaskRepository() コンストラクタ
+- [ ] `internal/repositories/task_repository_impl.go` - Create() メソッド実装
+- [ ] `internal/repositories/task_repository_impl.go` - FindByID() メソッド実装
+- [ ] `internal/repositories/task_repository_impl.go` - FindByUserID() メソッド実装（フィルタ・ページネーション対応）
+- [ ] `internal/repositories/task_repository_impl.go` - FindAll() メソッド実装（Admin用）
+- [ ] `internal/repositories/task_repository_impl.go` - Update() メソッド実装
+- [ ] `internal/repositories/task_repository_impl.go` - UpdateStatus() メソッド実装
+- [ ] `internal/repositories/task_repository_impl.go` - Delete() メソッド実装
+
+---
+
+#### 8. バリデーション実装
+
+##### 8-1. リクエストバリデーション
+- [ ] `internal/validators/user_validator.go` - RegisterRequest 構造体 + バリデーションタグ
+- [ ] `internal/validators/user_validator.go` - LoginRequest 構造体 + バリデーションタグ
+- [ ] `internal/validators/task_validator.go` - CreateTaskRequest 構造体 + バリデーションタグ
+- [ ] `internal/validators/task_validator.go` - UpdateTaskRequest 構造体 + バリデーションタグ
+- [ ] `internal/validators/task_validator.go` - UpdateStatusRequest 構造体 + バリデーションタグ
+
+---
+
+#### 9. コントローラー層（Handler）の実装
+
+##### 9-1. レスポンスヘルパー
+- [ ] `internal/utils/response.go` - SuccessResponse() 関数実装
+- [ ] `internal/utils/response.go` - ErrorResponse() 関数実装
+- [ ] `internal/utils/response.go` - ValidationErrorResponse() 関数実装
+
+##### 9-2. 認証コントローラー
+- [ ] `internal/controllers/auth_controller.go` - AuthController 構造体定義
+- [ ] `internal/controllers/auth_controller.go` - NewAuthController() コンストラクタ
+- [ ] `internal/controllers/auth_controller.go` - Register() ハンドラ実装
+- [ ] `internal/controllers/auth_controller.go` - Login() ハンドラ実装（Cookie設定含む）
+- [ ] `internal/controllers/auth_controller.go` - RefreshToken() ハンドラ実装
+- [ ] `internal/controllers/auth_controller.go` - Logout() ハンドラ実装（Cookie削除）
+
+##### 9-3. タスクコントローラー
+- [ ] `internal/controllers/task_controller.go` - TaskController 構造体定義
+- [ ] `internal/controllers/task_controller.go` - NewTaskController() コンストラクタ
+- [ ] `internal/controllers/task_controller.go` - GetTasks() ハンドラ実装（クエリパラメータ処理）
+- [ ] `internal/controllers/task_controller.go` - CreateTask() ハンドラ実装
+- [ ] `internal/controllers/task_controller.go` - GetTaskByID() ハンドラ実装
+- [ ] `internal/controllers/task_controller.go` - UpdateTask() ハンドラ実装
+- [ ] `internal/controllers/task_controller.go` - UpdateTaskStatus() ハンドラ実装
+- [ ] `internal/controllers/task_controller.go` - DeleteTask() ハンドラ実装
+
+---
+
+#### 10. ルーティング設定
+
+- [ ] `internal/routes/routes.go` - SetupRoutes() 関数実装
+- [ ] `internal/routes/routes.go` - 認証なしエンドポイント設定（/auth/register, /auth/login）
+- [ ] `internal/routes/routes.go` - 認証必須エンドポイント設定（/tasks/*）
+- [ ] `internal/routes/routes.go` - Admin権限必須エンドポイント設定（/admin/*）
+- [ ] `internal/routes/routes.go` - ヘルスチェック（/health）設定
+
+---
+
+#### 11. main.go の実装
+
+- [ ] `cmd/api/main.go` - 環境変数読み込み
+- [ ] `cmd/api/main.go` - DB接続初期化
+- [ ] `cmd/api/main.go` - Repository 初期化
+- [ ] `cmd/api/main.go` - Service 初期化
+- [ ] `cmd/api/main.go` - Controller 初期化
+- [ ] `cmd/api/main.go` - Router 設定
+- [ ] `cmd/api/main.go` - Graceful Shutdown 実装
+- [ ] `cmd/api/main.go` - サーバー起動
+
+---
+
+#### 12. 動作確認（Postman）
+
+- [ ] POST /api/v1/auth/register - ユーザー登録テスト
+- [ ] POST /api/v1/auth/login - ログインテスト（Cookie確認）
+- [ ] POST /api/v1/tasks - タスク作成テスト（要認証）
+- [ ] GET /api/v1/tasks - タスク一覧テスト
+- [ ] GET /api/v1/tasks/:id - タスク詳細テスト
+- [ ] PUT /api/v1/tasks/:id - タスク更新テスト
+- [ ] PATCH /api/v1/tasks/:id/status - ステータス更新テスト
+- [ ] DELETE /api/v1/tasks/:id - タスク削除テスト
+- [ ] 権限エラーテスト（他人のタスク操作）
+
+---
+
+#### 13. 管理者機能実装
+
+- [ ] `internal/services/admin_service.go` - AdminService 実装
+- [ ] `internal/controllers/admin_controller.go` - GetAllUsers() 実装
+- [ ] `internal/controllers/admin_controller.go` - GetAllTasks() 実装
+- [ ] ルーティング追加 - GET /api/v1/admin/users
+- [ ] ルーティング追加 - GET /api/v1/admin/tasks
+
+---
+
+#### 14. エクスポート機能実装
+
+- [ ] `internal/controllers/export_controller.go` - ExportController 実装
+- [ ] `internal/controllers/export_controller.go` - ExportTasksCSV() 実装（ストリーミング）
+- [ ] ルーティング追加 - GET /api/v1/tasks/export/csv
+
+---
+
+#### 15. WebSocket通知実装
+
+- [ ] `internal/websocket/client.go` - Client 構造体定義
+- [ ] `internal/websocket/hub.go` - Hub 構造体定義（クライアント管理）
+- [ ] `internal/websocket/hub.go` - Run() メソッド実装
+- [ ] `internal/websocket/hub.go` - Broadcast() メソッド実装
+- [ ] `internal/websocket/handler.go` - ServeWS() ハンドラ実装
+- [ ] `internal/services/notification_service.go` - NotificationService 実装
+- [ ] TaskService に通知処理追加（Create/Update/Delete時）
+- [ ] ルーティング追加 - GET /api/v1/ws/notifications
+
+---
+
+#### 16. 非機能要件（ミドルウェア）実装
+
+##### 16-1. ロギング
+- [ ] `internal/middleware/logger.go` - RequestLogger() 実装（リクエストID生成）
+
+##### 16-2. CORS
+- [ ] `internal/middleware/cors.go` - CORS() 実装
+
+##### 16-3. CSRF
+- [ ] `internal/middleware/csrf.go` - CSRF() 実装
+
+##### 16-4. Rate Limiting
+- [ ] `internal/middleware/rate_limit.go` - RateLimit() 実装（IP単位）
+
+##### 16-5. セキュリティヘッダー
+- [ ] `internal/middleware/security_headers.go` - SecurityHeaders() 実装
+
+##### 16-6. GZIP圧縮
+- [ ] `internal/middleware/gzip.go` - GZIP() 実装（またはgin-gzip使用）
+
+##### 16-7. Recovery
+- [ ] `internal/middleware/recovery.go` - Recovery() 実装
+
+##### 16-8. タイムアウト
+- [ ] `internal/middleware/timeout.go` - Timeout() 実装
+
+##### 16-9. ミドルウェア適用
+- [ ] `internal/routes/routes.go` - 全ミドルウェアを適用
+
+---
+
+#### 17. エラーハンドリング強化
+
+- [ ] 404ハンドラ設定
+- [ ] 405ハンドラ設定
+- [ ] 統一エラーレスポンス形式確認
+
+---
+
 
 ### フェーズ2: フロントエンド実装
 - [ ] フロントエンド開発
