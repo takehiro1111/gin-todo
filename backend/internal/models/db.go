@@ -3,16 +3,16 @@ package models
 import (
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
-	"github.com/takehiro1111/gin-todo/backend/internal/config"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
-func DBInit(user, passWord, host, port, dbName, sslMode, tz, env string) (*gorm.DB, error) {
+func DBInit(user, passWord, host, port, dbName, sslMode, tz, env string, intMaxIdleConns, intMaxOpenConns, intConnMaxLifetime int) (*gorm.DB, error) {
 	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=%s TimeZone=%s", host, user, passWord, dbName, port, sslMode, tz)
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
@@ -24,11 +24,9 @@ func DBInit(user, passWord, host, port, dbName, sslMode, tz, env string) (*gorm.
 		return nil, fmt.Errorf("failed to get database instance: %w", err)
 	}
 
-	dbCfg := config.GetDBConfig(env)
-
-	sqlDB.SetMaxIdleConns(dbCfg.MaxIdleConns)
-	sqlDB.SetMaxOpenConns(dbCfg.MaxOpenConns)
-	sqlDB.SetConnMaxLifetime(dbCfg.ConnMaxLifetime)
+	sqlDB.SetMaxIdleConns(intMaxIdleConns)
+	sqlDB.SetMaxOpenConns(intMaxOpenConns)
+	sqlDB.SetConnMaxLifetime(time.Duration(intConnMaxLifetime) * time.Second)
 
 	return db, nil
 }

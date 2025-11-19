@@ -5,15 +5,16 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 
-	"github.com/joho/godotenv"
 	"github.com/takehiro1111/gin-todo/backend/infrastructure/aws"
 	"github.com/takehiro1111/gin-todo/backend/internal/models"
 	"github.com/takehiro1111/gin-todo/backend/internal/services"
+	"github.com/takehiro1111/gin-todo/backend/internal/utils"
 )
 
 // @title           Gin Todo API
@@ -47,8 +48,29 @@ func main() {
 		log.Fatalf("failed to get ssmParameters: %v", err)
 	}
 
-	envLoad()
 	env := os.Getenv("ENV")
+	if env != "production" && env != "staging" {
+		utils.EnvLoad(".env")
+	}
+
+	maxIdleConns := os.Getenv("DB_MAX_IDLE_CONNS")
+	maxOpenConns := os.Getenv("DB_MAX_OPEN_CONNS")
+	connMaxLifetime := os.Getenv("DB_CONN_MAX_LIFETIME")
+
+	intMaxIdleConns, err := strconv.Atoi(maxIdleConns)
+	if err != nil {
+		log.Fatalf("failed read env:%w", err)
+	}
+
+	intMaxOpenConns, err := strconv.Atoi(maxOpenConns)
+	if err != nil {
+		log.Fatalf("failed read env:%w", err)
+	}
+
+	intConnMaxLifetime, err := strconv.Atoi(connMaxLifetime)
+	if err != nil {
+		log.Fatalf("failed read env:%w", err)
+	}
 
 	items := make(map[string]string)
 	for _, param := range params.Parameters {
@@ -64,7 +86,7 @@ func main() {
 	tz := "Asia/Tokyo"
 
 	// 後工程で戻り値を活用する
-	_, err = models.DBInit(dbUser, dbPassword, dbHost, dbPort, dbName, sslMode, tz, env)
+	_, err = models.DBInit(dbUser, dbPassword, dbHost, dbPort, dbName, sslMode, tz, env, intMaxIdleConns, intMaxOpenConns, intConnMaxLifetime)
 	if err != nil {
 		log.Fatalf("db initialization failed: %v", err)
 	}
@@ -116,11 +138,4 @@ func HealthCheck(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status": "ok",
 	})
-}
-
-func envLoad() {
-	err := godotenv.Load(".env")
-	if err != nil {
-		log.Fatalf("Error loading env target")
-	}
 }
