@@ -4,7 +4,7 @@ import (
 	"github.com/takehiro1111/gin-todo/backend/internal/models"
 )
 
-type UserRole interface {
+type UserRoleRepository interface {
 	FindAll() ([]*models.UserRole, error)
 	FindByName(name string) (*models.UserRole, error)
 }
