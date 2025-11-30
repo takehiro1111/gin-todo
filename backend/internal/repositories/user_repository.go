@@ -13,7 +13,7 @@ type UserRepository interface {
 	Create(user *models.User) error
 	FindByID(id uint) (*models.User, error)
 	FindByEmail(email string) (*models.User, error)
-	FindAll() ([]*models.User, error)
+	FindAll() ([]models.User, error)
 	Update(user *models.User) error
 	Delete(id uint) error
 }
@@ -22,8 +22,21 @@ type userRepositoryImpl struct {
 	db *gorm.DB
 }
 
-func NewUserRepository(db *gorm.DB) *userRepositoryImpl {
+// UserRepositoryのinterfaceを型として返すことで実装の詳細を隠せる
+// テストのMockへの切り替えやすさも考慮している。
+func NewUserRepository(db *gorm.DB) UserRepository {
 	return &userRepositoryImpl{db: db}
+}
+
+func (r *userRepositoryImpl) Create(user *models.User) error {
+	ctx := context.Background()
+
+	err := gorm.G[models.User](r.db).Create(ctx, user)
+	if err != nil {
+		return fmt.Errorf("failed to create user: %v", err)
+	}
+
+	return nil
 }
 
 func (r *userRepositoryImpl) FindByID(id uint) (*models.User, error) {
@@ -40,7 +53,7 @@ func (r *userRepositoryImpl) FindByID(id uint) (*models.User, error) {
 	return &user, nil
 }
 
-func (r *userRepositoryImpl) FindByEMail(email string) (*models.User, error) {
+func (r *userRepositoryImpl) FindByEmail(email string) (*models.User, error) {
 	ctx := context.Background()
 
 	user, err := gorm.G[models.User](r.db).Where("email = ?", email).First(ctx)
@@ -52,4 +65,37 @@ func (r *userRepositoryImpl) FindByEMail(email string) (*models.User, error) {
 	}
 
 	return &user, nil
+}
+
+func (r *userRepositoryImpl) FindAll() ([]models.User, error) {
+	ctx := context.Background()
+
+	users, err := gorm.G[models.User](r.db).Find(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find users: %v", err)
+	}
+
+	return users, nil
+}
+
+func (r *userRepositoryImpl) Update(user *models.User) error {
+	ctx := context.Background()
+
+	_, err := gorm.G[models.User](r.db).Where("id = ?", user.ID).Updates(ctx, *user)
+	if err != nil {
+		return fmt.Errorf("failed to update user by id: %v", err)
+	}
+
+	return nil
+}
+
+func (r *userRepositoryImpl) Delete(id uint) error {
+	ctx := context.Background()
+
+	_, err := gorm.G[models.User](r.db).Where("id = ?", id).Delete(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to delete user by id: %v", err)
+	}
+
+	return nil
 }
