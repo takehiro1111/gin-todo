@@ -356,34 +356,9 @@ psql -U gin -h localhost -d gin-todo
 
 ---
 
-#### 5. 認証基盤の先行実装
+#### 5. サービス層の実装
 
-##### 5-1. パスワードハッシュ化
-- [ ] `internal/utils/password.go` - HashPassword() 関数実装
-- [ ] `internal/utils/password.go` - CheckPassword() 関数実装
-
-##### 5-2. JWT トークン生成/検証
-- [ ] `internal/utils/jwt.go` - Claims 構造体定義
-- [ ] `internal/utils/jwt.go` - GenerateAccessToken() 実装
-- [ ] `internal/utils/jwt.go` - GenerateRefreshToken() 実装
-- [ ] `internal/utils/jwt.go` - ValidateToken() 実装
-
-##### 5-3. 認証ミドルウェア
-- [ ] `internal/middleware/auth.go` - AuthMiddleware() 実装（JWT検証）
-- [ ] `internal/middleware/auth.go` - RoleMiddleware() 実装（Admin権限チェック）
-
----
-
-#### 6. サービス層の実装
-
-##### 6-1. UserService（認証ロジック）
-- [ ] `internal/services/auth_service.go` - AuthService 構造体定義
-- [ ] `internal/services/auth_service.go` - Register() メソッド実装
-- [ ] `internal/services/auth_service.go` - Login() メソッド実装
-- [ ] `internal/services/auth_service.go` - RefreshToken() メソッド実装
-- [ ] `internal/services/auth_service.go` - Logout() メソッド実装
-
-##### 6-2. TaskService（ビジネスロジック）
+##### 5-1. TaskService（ビジネスロジック）
 - [ ] `internal/services/task_service.go` - TaskService 構造体定義
 - [ ] `internal/services/task_service.go` - CreateTask() メソッド実装
 - [ ] `internal/services/task_service.go` - GetTaskByID() メソッド実装（権限チェック含む）
@@ -394,9 +369,38 @@ psql -U gin -h localhost -d gin-todo
 
 ---
 
-#### 8. バリデーション実装
+#### 6. 認証基盤の実装
 
-##### 8-1. リクエストバリデーション
+##### 6-1. パスワードハッシュ化
+- [ ] `internal/utils/password.go` - HashPassword() 関数実装
+- [ ] `internal/utils/password.go` - CheckPassword() 関数実装
+
+##### 6-2. JWT トークン生成/検証
+- [ ] `internal/utils/jwt.go` - Claims 構造体定義
+- [ ] `internal/utils/jwt.go` - GenerateAccessToken() 実装
+- [ ] `internal/utils/jwt.go` - GenerateRefreshToken() 実装
+- [ ] `internal/utils/jwt.go` - ValidateToken() 実装
+
+##### 6-3. 認証ミドルウェア
+- [ ] `internal/middleware/auth.go` - AuthMiddleware() 実装（JWT検証）
+- [ ] `internal/middleware/auth.go` - RoleMiddleware() 実装（Admin権限チェック）
+
+##### 6-4. AuthService（認証ロジック）
+- [ ] `internal/services/auth_service.go` - AuthService 構造体定義
+- [ ] `internal/services/auth_service.go` - Register() メソッド実装
+- [ ] `internal/services/auth_service.go` - Login() メソッド実装
+- [ ] `internal/services/auth_service.go` - RefreshToken() メソッド実装
+- [ ] `internal/services/auth_service.go` - Logout() メソッド実装
+
+> [!NOTE]
+> - ユーザーのCRUD操作は主に認証か管理者機能に紐づく
+>   - 管理者ではない限り、他ユーザーを操作する必要はないため。
+
+---
+
+#### 7. バリデーション実装
+
+##### 7-1. リクエストバリデーション
 - [ ] `internal/validators/user_validator.go` - RegisterRequest 構造体 + バリデーションタグ
 - [ ] `internal/validators/user_validator.go` - LoginRequest 構造体 + バリデーションタグ
 - [ ] `internal/validators/task_validator.go` - CreateTaskRequest 構造体 + バリデーションタグ
@@ -405,14 +409,14 @@ psql -U gin -h localhost -d gin-todo
 
 ---
 
-#### 9. コントローラー層（Handler）の実装
+#### 8. コントローラー層（Handler）の実装
 
-##### 9-1. レスポンスヘルパー
+##### 8-1. レスポンスヘルパー
 - [ ] `internal/utils/response.go` - SuccessResponse() 関数実装
 - [ ] `internal/utils/response.go` - ErrorResponse() 関数実装
 - [ ] `internal/utils/response.go` - ValidationErrorResponse() 関数実装
 
-##### 9-2. 認証コントローラー
+##### 8-2. 認証コントローラー
 - [ ] `internal/controllers/auth_controller.go` - AuthController 構造体定義
 - [ ] `internal/controllers/auth_controller.go` - NewAuthController() コンストラクタ
 - [ ] `internal/controllers/auth_controller.go` - Register() ハンドラ実装
@@ -420,7 +424,7 @@ psql -U gin -h localhost -d gin-todo
 - [ ] `internal/controllers/auth_controller.go` - RefreshToken() ハンドラ実装
 - [ ] `internal/controllers/auth_controller.go` - Logout() ハンドラ実装（Cookie削除）
 
-##### 9-3. タスクコントローラー
+##### 8-3. タスクコントローラー
 - [ ] `internal/controllers/task_controller.go` - TaskController 構造体定義
 - [ ] `internal/controllers/task_controller.go` - NewTaskController() コンストラクタ
 - [ ] `internal/controllers/task_controller.go` - GetTasks() ハンドラ実装（クエリパラメータ処理）
@@ -432,7 +436,7 @@ psql -U gin -h localhost -d gin-todo
 
 ---
 
-#### 10. ルーティング設定
+#### 9. ルーティング設定
 
 - [ ] `internal/routes/routes.go` - SetupRoutes() 関数実装
 - [ ] `internal/routes/routes.go` - 認証なしエンドポイント設定（/auth/register, /auth/login）
@@ -442,7 +446,7 @@ psql -U gin -h localhost -d gin-todo
 
 ---
 
-#### 11. main.go の実装
+#### 10. main.go の実装
 
 - [ ] `cmd/api/main.go` - 環境変数読み込み
 - [ ] `cmd/api/main.go` - DB接続初期化
@@ -455,7 +459,7 @@ psql -U gin -h localhost -d gin-todo
 
 ---
 
-#### 12. 動作確認（Postman）
+#### 11. 動作確認（Postman）
 
 - [ ] POST /api/v1/auth/register - ユーザー登録テスト
 - [ ] POST /api/v1/auth/login - ログインテスト（Cookie確認）
@@ -469,7 +473,7 @@ psql -U gin -h localhost -d gin-todo
 
 ---
 
-#### 13. 管理者機能実装
+#### 12. 管理者機能実装
 
 - [ ] `internal/services/admin_service.go` - AdminService 実装
 - [ ] `internal/controllers/admin_controller.go` - GetAllUsers() 実装
@@ -479,7 +483,7 @@ psql -U gin -h localhost -d gin-todo
 
 ---
 
-#### 14. エクスポート機能実装
+#### 13. エクスポート機能実装
 
 - [ ] `internal/controllers/export_controller.go` - ExportController 実装
 - [ ] `internal/controllers/export_controller.go` - ExportTasksCSV() 実装（ストリーミング）
@@ -487,7 +491,7 @@ psql -U gin -h localhost -d gin-todo
 
 ---
 
-#### 15. WebSocket通知実装
+#### 14. WebSocket通知実装
 
 - [ ] `internal/websocket/client.go` - Client 構造体定義
 - [ ] `internal/websocket/hub.go` - Hub 構造体定義（クライアント管理）
@@ -500,38 +504,38 @@ psql -U gin -h localhost -d gin-todo
 
 ---
 
-#### 16. 非機能要件（ミドルウェア）実装
+#### 15. 非機能要件（ミドルウェア）実装
 
-##### 16-1. ロギング
+##### 15-1. ロギング
 - [ ] `internal/middleware/logger.go` - RequestLogger() 実装（リクエストID生成）
 
-##### 16-2. CORS
+##### 15-2. CORS
 - [ ] `internal/middleware/cors.go` - CORS() 実装
 
-##### 16-3. CSRF
+##### 15-3. CSRF
 - [ ] `internal/middleware/csrf.go` - CSRF() 実装
 
-##### 16-4. Rate Limiting
+##### 15-4. Rate Limiting
 - [ ] `internal/middleware/rate_limit.go` - RateLimit() 実装（IP単位）
 
-##### 16-5. セキュリティヘッダー
+##### 15-5. セキュリティヘッダー
 - [ ] `internal/middleware/security_headers.go` - SecurityHeaders() 実装
 
-##### 16-6. GZIP圧縮
+##### 15-6. GZIP圧縮
 - [ ] `internal/middleware/gzip.go` - GZIP() 実装（またはgin-gzip使用）
 
-##### 16-7. Recovery
+##### 15-7. Recovery
 - [ ] `internal/middleware/recovery.go` - Recovery() 実装
 
-##### 16-8. タイムアウト
+##### 15-8. タイムアウト
 - [ ] `internal/middleware/timeout.go` - Timeout() 実装
 
-##### 16-9. ミドルウェア適用
+##### 15-9. ミドルウェア適用
 - [ ] `internal/routes/routes.go` - 全ミドルウェアを適用
 
 ---
 
-#### 17. エラーハンドリング強化
+#### 16. エラーハンドリング強化
 
 - [ ] 404ハンドラ設定
 - [ ] 405ハンドラ設定
