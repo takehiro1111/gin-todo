@@ -40,7 +40,7 @@ func (r *userRepositoryImpl) FindByID(id uint) (*models.User, error) {
 	return &user, nil
 }
 
-func (r *userRepositoryImpl) FindByEMail(email string) (*models.User, error) {
+func (r *userRepositoryImpl) FindByEmail(email string) (*models.User, error) {
 	ctx := context.Background()
 
 	user, err := gorm.G[models.User](r.db).Where("email = ?", email).First(ctx)
