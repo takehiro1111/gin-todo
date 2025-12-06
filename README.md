@@ -344,17 +344,15 @@ psql -U gin -h localhost -d gin-todo
 - [x] `internal/models/task.go` - Task構造体定義
 - [x] `internal/models/task_status.go` - TaskStatus型定義
 
-#### 3. DB接続設定とリポジトリ基盤
+#### 3. DB接続設定
 - [x] `internal/models/database.go` - InitDB()関数実装（GORM接続）
 - [x] `internal/models/database.go` - AutoMigrate実行
-- [ ] `internal/repositories/user_repository.go` - UserRepositoryインターフェース定義
-- [ ] `internal/repositories/task_repository.go` - TaskRepositoryインターフェース定義
-- [ ] `internal/repositories/task_repository.go` - TaskFilters構造体定義
 
-#### 4. リポジトリインターフェース定義
-- [ ] `internal/repositories/user_repository.go` - UserRepository インターフェース定義
-- [ ] `internal/repositories/task_repository.go` - TaskRepository インターフェース定義
-- [ ] `internal/repositories/task_repository.go` - TaskFilters 構造体定義
+#### 4. リポジトリ層
+- [x] `internal/repositories/user_repository.go` - UserRepository（インターフェース + 実装）
+- [x] `internal/repositories/task_repository.go` - TaskRepository（インターフェース + 実装）
+- [x] `internal/repositories/user_role_repository.go` - UserRoleRepository（インターフェース + 実装）
+- [x] `internal/repositories/task_status_repository.go` - TaskStatusRepository（インターフェース + 実装）
 
 ---
 
@@ -393,31 +391,6 @@ psql -U gin -h localhost -d gin-todo
 - [ ] `internal/services/task_service.go` - UpdateTask() メソッド実装（権限チェック含む）
 - [ ] `internal/services/task_service.go` - UpdateTaskStatus() メソッド実装
 - [ ] `internal/services/task_service.go` - DeleteTask() メソッド実装（権限チェック含む）
-
----
-
-#### 7. リポジトリ層の実装
-
-##### 7-1. UserRepository 実装
-- [ ] `internal/repositories/user_repository_impl.go` - userRepositoryImpl 構造体定義
-- [ ] `internal/repositories/user_repository_impl.go` - NewUserRepository() コンストラクタ
-- [ ] `internal/repositories/user_repository_impl.go` - Create() メソッド実装
-- [ ] `internal/repositories/user_repository_impl.go` - FindByID() メソッド実装
-- [ ] `internal/repositories/user_repository_impl.go` - FindByEmail() メソッド実装
-- [ ] `internal/repositories/user_repository_impl.go` - FindAll() メソッド実装
-- [ ] `internal/repositories/user_repository_impl.go` - Update() メソッド実装
-- [ ] `internal/repositories/user_repository_impl.go` - Delete() メソッド実装
-
-##### 7-2. TaskRepository 実装
-- [ ] `internal/repositories/task_repository_impl.go` - taskRepositoryImpl 構造体定義
-- [ ] `internal/repositories/task_repository_impl.go` - NewTaskRepository() コンストラクタ
-- [ ] `internal/repositories/task_repository_impl.go` - Create() メソッド実装
-- [ ] `internal/repositories/task_repository_impl.go` - FindByID() メソッド実装
-- [ ] `internal/repositories/task_repository_impl.go` - FindByUserID() メソッド実装（フィルタ・ページネーション対応）
-- [ ] `internal/repositories/task_repository_impl.go` - FindAll() メソッド実装（Admin用）
-- [ ] `internal/repositories/task_repository_impl.go` - Update() メソッド実装
-- [ ] `internal/repositories/task_repository_impl.go` - UpdateStatus() メソッド実装
-- [ ] `internal/repositories/task_repository_impl.go` - Delete() メソッド実装
 
 ---
 
