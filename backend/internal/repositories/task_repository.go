@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/takehiro1111/gin-todo/backend/internal/models"
@@ -42,6 +43,9 @@ func (r *taskRepositoryImpl) FindByID(id uint) (*models.Task, error) {
 
 	task, err := gorm.G[models.Task](r.db).Where("id = ?", id).First(ctx)
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("task not found by id")
+		}
 		return nil, fmt.Errorf("failed to find task by id: %v", err)
 	}
 
@@ -53,7 +57,10 @@ func (r *taskRepositoryImpl) FindByUserID(userID uint) ([]models.Task, error) {
 
 	tasks, err := gorm.G[models.Task](r.db).Where("user_id = ?", userID).Find(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find tasks by user id: %v", err)
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("task not found by userID")
+		}
+		return nil, fmt.Errorf("failed to find task by userID: %v", err)
 	}
 
 	return tasks, nil
@@ -75,7 +82,10 @@ func (r *taskRepositoryImpl) Update(task *models.Task) error {
 
 	_, err := gorm.G[models.Task](r.db).Where("id = ?", task.ID).Updates(ctx, *task)
 	if err != nil {
-		return fmt.Errorf("failed to update task by id: %v", err)
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.New("task not found by id")
+		}
+		return fmt.Errorf("failed to find task by id: %v", err)
 	}
 
 	return nil
@@ -86,7 +96,10 @@ func (r *taskRepositoryImpl) UpdateStatus(id uint, statusID int64) error {
 
 	_, err := gorm.G[models.Task](r.db).Where("id = ?", id).Update(ctx, "status_id", statusID)
 	if err != nil {
-		return fmt.Errorf("failed to update task status by task id: %v", err)
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.New("status not found by id")
+		}
+		return fmt.Errorf("failed to find status by id: %v", err)
 	}
 
 	return nil
@@ -97,7 +110,10 @@ func (r *taskRepositoryImpl) Delete(id uint) error {
 
 	_, err := gorm.G[models.Task](r.db).Where("id = ?", id).Delete(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to delete task by id: %v", err)
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.New("task not found by id")
+		}
+		return fmt.Errorf("failed to find task by id: %v", err)
 	}
 
 	return nil

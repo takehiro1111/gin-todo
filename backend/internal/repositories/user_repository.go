@@ -83,7 +83,10 @@ func (r *userRepositoryImpl) Update(user *models.User) error {
 
 	_, err := gorm.G[models.User](r.db).Where("id = ?", user.ID).Updates(ctx, *user)
 	if err != nil {
-		return fmt.Errorf("failed to update user by id: %v", err)
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.New("user not found by id")
+		}
+		return fmt.Errorf("failed to find user by id: %v", err)
 	}
 
 	return nil
@@ -94,7 +97,10 @@ func (r *userRepositoryImpl) Delete(id uint) error {
 
 	_, err := gorm.G[models.User](r.db).Where("id = ?", id).Delete(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to delete user by id: %v", err)
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.New("user not found by id")
+		}
+		return fmt.Errorf("failed to find user by id: %v", err)
 	}
 
 	return nil
