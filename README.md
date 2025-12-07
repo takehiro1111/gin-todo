@@ -359,13 +359,13 @@ psql -U gin -h localhost -d gin-todo
 #### 5. サービス層の実装
 
 ##### 5-1. TaskService（ビジネスロジック）
-- [ ] `internal/services/task_service.go` - TaskService 構造体定義
-- [ ] `internal/services/task_service.go` - CreateTask() メソッド実装
-- [ ] `internal/services/task_service.go` - GetTaskByID() メソッド実装（権限チェック含む）
-- [ ] `internal/services/task_service.go` - GetTasksByUserID() メソッド実装
-- [ ] `internal/services/task_service.go` - UpdateTask() メソッド実装（権限チェック含む）
-- [ ] `internal/services/task_service.go` - UpdateTaskStatus() メソッド実装
-- [ ] `internal/services/task_service.go` - DeleteTask() メソッド実装（権限チェック含む）
+- [x] `internal/services/task_service.go` - TaskService 構造体定義
+- [x] `internal/services/task_service.go` - CreateTask() メソッド実装
+- [x] `internal/services/task_service.go` - GetTaskByID() メソッド実装（権限チェック含む）
+- [x] `internal/services/task_service.go` - GetTasksByUserID() メソッド実装
+- [x] `internal/services/task_service.go` - UpdateTask() メソッド実装（権限チェック含む）
+- [x] `internal/services/task_service.go` - UpdateTaskStatus() メソッド実装
+- [x] `internal/services/task_service.go` - DeleteTask() メソッド実装（権限チェック含む）
 
 ---
 
@@ -398,25 +398,14 @@ psql -U gin -h localhost -d gin-todo
 
 ---
 
-#### 7. バリデーション実装
+#### 7. コントローラー層（Handler）の実装
 
-##### 7-1. リクエストバリデーション
-- [ ] `internal/validators/user_validator.go` - RegisterRequest 構造体 + バリデーションタグ
-- [ ] `internal/validators/user_validator.go` - LoginRequest 構造体 + バリデーションタグ
-- [ ] `internal/validators/task_validator.go` - CreateTaskRequest 構造体 + バリデーションタグ
-- [ ] `internal/validators/task_validator.go` - UpdateTaskRequest 構造体 + バリデーションタグ
-- [ ] `internal/validators/task_validator.go` - UpdateStatusRequest 構造体 + バリデーションタグ
-
----
-
-#### 8. コントローラー層（Handler）の実装
-
-##### 8-1. レスポンスヘルパー
+##### 7-1. レスポンスヘルパー
 - [ ] `internal/utils/response.go` - SuccessResponse() 関数実装
 - [ ] `internal/utils/response.go` - ErrorResponse() 関数実装
 - [ ] `internal/utils/response.go` - ValidationErrorResponse() 関数実装
 
-##### 8-2. 認証コントローラー
+##### 7-2. 認証コントローラー
 - [ ] `internal/controllers/auth_controller.go` - AuthController 構造体定義
 - [ ] `internal/controllers/auth_controller.go` - NewAuthController() コンストラクタ
 - [ ] `internal/controllers/auth_controller.go` - Register() ハンドラ実装
@@ -424,7 +413,7 @@ psql -U gin -h localhost -d gin-todo
 - [ ] `internal/controllers/auth_controller.go` - RefreshToken() ハンドラ実装
 - [ ] `internal/controllers/auth_controller.go` - Logout() ハンドラ実装（Cookie削除）
 
-##### 8-3. タスクコントローラー
+##### 7-3. タスクコントローラー
 - [ ] `internal/controllers/task_controller.go` - TaskController 構造体定義
 - [ ] `internal/controllers/task_controller.go` - NewTaskController() コンストラクタ
 - [ ] `internal/controllers/task_controller.go` - GetTasks() ハンドラ実装（クエリパラメータ処理）
@@ -436,7 +425,7 @@ psql -U gin -h localhost -d gin-todo
 
 ---
 
-#### 9. ルーティング設定
+#### 8. ルーティング設定
 
 - [ ] `internal/routes/routes.go` - SetupRoutes() 関数実装
 - [ ] `internal/routes/routes.go` - 認証なしエンドポイント設定（/auth/register, /auth/login）
@@ -446,7 +435,7 @@ psql -U gin -h localhost -d gin-todo
 
 ---
 
-#### 10. main.go の実装
+#### 9. main.go の実装
 
 - [ ] `cmd/api/main.go` - 環境変数読み込み
 - [ ] `cmd/api/main.go` - DB接続初期化
@@ -459,7 +448,7 @@ psql -U gin -h localhost -d gin-todo
 
 ---
 
-#### 11. 動作確認（Postman）
+#### 10. 動作確認（Postman）
 
 - [ ] POST /api/v1/auth/register - ユーザー登録テスト
 - [ ] POST /api/v1/auth/login - ログインテスト（Cookie確認）
@@ -470,6 +459,17 @@ psql -U gin -h localhost -d gin-todo
 - [ ] PATCH /api/v1/tasks/:id/status - ステータス更新テスト
 - [ ] DELETE /api/v1/tasks/:id - タスク削除テスト
 - [ ] 権限エラーテスト（他人のタスク操作）
+
+---
+
+#### 11. バリデーション実装
+
+##### 11-1. リクエストバリデーション
+- [ ] `internal/validators/user_validator.go` - RegisterRequest 構造体 + バリデーションタグ
+- [ ] `internal/validators/user_validator.go` - LoginRequest 構造体 + バリデーションタグ
+- [ ] `internal/validators/task_validator.go` - CreateTaskRequest 構造体 + バリデーションタグ
+- [ ] `internal/validators/task_validator.go` - UpdateTaskRequest 構造体 + バリデーションタグ
+- [ ] `internal/validators/task_validator.go` - UpdateStatusRequest 構造体 + バリデーションタグ
 
 ---
 
