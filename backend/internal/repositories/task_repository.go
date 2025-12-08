@@ -10,13 +10,13 @@ import (
 )
 
 type TaskRepository interface {
-	Create(task *models.Task) error
-	FindByID(id uint) (*models.Task, error)
-	FindByUserID(userID uint) ([]models.Task, error)
-	FindAll() ([]models.Task, error)
-	Update(task *models.Task) error
-	UpdateStatus(id uint, statusID int64) error
-	Delete(id uint) error
+	Create(ctx context.Context, task *models.Task) error
+	FindByID(ctx context.Context, id uint) (*models.Task, error)
+	FindByUserID(ctx context.Context, userID uint) ([]models.Task, error)
+	FindAll(ctx context.Context) ([]models.Task, error)
+	Update(ctx context.Context, task *models.Task) error
+	UpdateStatus(ctx context.Context, id uint, statusID int64) error
+	Delete(ctx context.Context, id uint) error
 }
 
 type taskRepositoryImpl struct {
@@ -27,9 +27,7 @@ func NewTaskRepository(db *gorm.DB) TaskRepository {
 	return &taskRepositoryImpl{db: db}
 }
 
-func (r *taskRepositoryImpl) Create(task *models.Task) error {
-	ctx := context.Background()
-
+func (r *taskRepositoryImpl) Create(ctx context.Context, task *models.Task) error {
 	err := gorm.G[models.Task](r.db).Create(ctx, task)
 	if err != nil {
 		return fmt.Errorf("failed to create task: %v", err)
@@ -38,9 +36,7 @@ func (r *taskRepositoryImpl) Create(task *models.Task) error {
 	return nil
 }
 
-func (r *taskRepositoryImpl) FindByID(id uint) (*models.Task, error) {
-	ctx := context.Background()
-
+func (r *taskRepositoryImpl) FindByID(ctx context.Context, id uint) (*models.Task, error) {
 	task, err := gorm.G[models.Task](r.db).Where("id = ?", id).First(ctx)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -52,9 +48,7 @@ func (r *taskRepositoryImpl) FindByID(id uint) (*models.Task, error) {
 	return &task, nil
 }
 
-func (r *taskRepositoryImpl) FindByUserID(userID uint) ([]models.Task, error) {
-	ctx := context.Background()
-
+func (r *taskRepositoryImpl) FindByUserID(ctx context.Context, userID uint) ([]models.Task, error) {
 	tasks, err := gorm.G[models.Task](r.db).Where("user_id = ?", userID).Find(ctx)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -66,9 +60,7 @@ func (r *taskRepositoryImpl) FindByUserID(userID uint) ([]models.Task, error) {
 	return tasks, nil
 }
 
-func (r *taskRepositoryImpl) FindAll() ([]models.Task, error) {
-	ctx := context.Background()
-
+func (r *taskRepositoryImpl) FindAll(ctx context.Context) ([]models.Task, error) {
 	tasks, err := gorm.G[models.Task](r.db).Find(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find tasks: %v", err)
@@ -77,9 +69,7 @@ func (r *taskRepositoryImpl) FindAll() ([]models.Task, error) {
 	return tasks, nil
 }
 
-func (r *taskRepositoryImpl) Update(task *models.Task) error {
-	ctx := context.Background()
-
+func (r *taskRepositoryImpl) Update(ctx context.Context, task *models.Task) error {
 	_, err := gorm.G[models.Task](r.db).Where("id = ?", task.ID).Updates(ctx, *task)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -91,9 +81,7 @@ func (r *taskRepositoryImpl) Update(task *models.Task) error {
 	return nil
 }
 
-func (r *taskRepositoryImpl) UpdateStatus(id uint, statusID int64) error {
-	ctx := context.Background()
-
+func (r *taskRepositoryImpl) UpdateStatus(ctx context.Context, id uint, statusID int64) error {
 	_, err := gorm.G[models.Task](r.db).Where("id = ?", id).Update(ctx, "status_id", statusID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -105,9 +93,7 @@ func (r *taskRepositoryImpl) UpdateStatus(id uint, statusID int64) error {
 	return nil
 }
 
-func (r *taskRepositoryImpl) Delete(id uint) error {
-	ctx := context.Background()
-
+func (r *taskRepositoryImpl) Delete(ctx context.Context, id uint) error {
 	_, err := gorm.G[models.Task](r.db).Where("id = ?", id).Delete(ctx)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
