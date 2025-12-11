@@ -372,8 +372,8 @@ psql -U gin -h localhost -d gin-todo
 #### 6. 認証基盤の実装
 
 ##### 6-1. パスワードハッシュ化
-- [ ] `internal/utils/password.go` - HashPassword() 関数実装
-- [ ] `internal/utils/password.go` - CheckPassword() 関数実装
+- [x] `internal/utils/password.go` - HashPassword() 関数実装
+- [x] `internal/utils/password.go` - CheckPassword() 関数実装
 
 ##### 6-2. JWT トークン生成/検証
 - [ ] `internal/utils/jwt.go` - Claims 構造体定義
