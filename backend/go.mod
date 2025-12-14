@@ -8,6 +8,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ssm v1.67.0
 	github.com/gin-gonic/gin v1.11.0
 	github.com/go-playground/validator/v10 v10.27.0
+	github.com/golang-jwt/jwt/v5 v5.3.0
 	github.com/golang-migrate/migrate/v4 v4.19.0
 	github.com/joho/godotenv v1.5.1
 	github.com/stretchr/testify v1.11.1

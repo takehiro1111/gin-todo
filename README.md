@@ -376,10 +376,10 @@ psql -U gin -h localhost -d gin-todo
 - [x] `internal/utils/password.go` - CheckPassword() 関数実装
 
 ##### 6-2. JWT トークン生成/検証
-- [ ] `internal/utils/jwt.go` - Claims 構造体定義
-- [ ] `internal/utils/jwt.go` - GenerateAccessToken() 実装
-- [ ] `internal/utils/jwt.go` - GenerateRefreshToken() 実装
-- [ ] `internal/utils/jwt.go` - ValidateToken() 実装
+- [x] `internal/utils/jwt.go` - Claims 構造体定義
+- [x] `internal/utils/jwt.go` - GenerateAccessToken() 実装
+- [x] `internal/utils/jwt.go` - GenerateRefreshToken() 実装
+- [x] `internal/utils/jwt.go` - ValidateToken() 実装
 
 ##### 6-3. 認証ミドルウェア
 - [ ] `internal/middleware/auth.go` - AuthMiddleware() 実装（JWT検証）
