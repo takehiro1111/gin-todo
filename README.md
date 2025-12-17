@@ -383,7 +383,8 @@ psql -U gin -h localhost -d gin-todo
 
 ##### 6-3. 認証ミドルウェア
 - ~~ [ ] `internal/middleware/auth.go` - AuthMiddleware() 実装（JWT検証）~~
-- [ ] `internal/middleware/auth.go` - RoleMiddleware() 実装（Admin権限チェック）
+  - `6-2. JWT トークン生成/検証`と処理が重複するため。
+- [x] `internal/middleware/auth.go` - RoleMiddleware() 実装（Admin権限チェック）
 
 ##### 6-4. AuthService（認証ロジック）
 - [ ] `internal/services/auth_service.go` - AuthService 構造体定義
