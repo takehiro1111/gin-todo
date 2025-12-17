@@ -382,7 +382,7 @@ psql -U gin -h localhost -d gin-todo
 - [x] `internal/utils/jwt.go` - ValidateToken() 実装
 
 ##### 6-3. 認証ミドルウェア
-- [ ] `internal/middleware/auth.go` - AuthMiddleware() 実装（JWT検証）
+- ~~ [ ] `internal/middleware/auth.go` - AuthMiddleware() 実装（JWT検証）~~
 - [ ] `internal/middleware/auth.go` - RoleMiddleware() 実装（Admin権限チェック）
 
 ##### 6-4. AuthService（認証ロジック）

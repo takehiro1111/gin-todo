@@ -15,6 +15,7 @@ type JWTProvider interface {
 
 type JWTClaims struct {
 	UserName string `json:"username"`
+	Role     string `json:"role"`
 	jwt.RegisteredClaims
 }
 
@@ -30,13 +31,14 @@ func NewDefaultJWTProvider(jwtSecret, issuer string) *DefaultJWTProvider {
 	}
 }
 
-func (p *DefaultJWTProvider) GenerateAccessToken(userName string, ext, iat, notBefore time.Time) (string, error) {
+func (p *DefaultJWTProvider) GenerateAccessToken(userName, role string, ext, iat, notBefore time.Time) (string, error) {
 	if p.secret == "" {
 		return "", errors.New("jwt secret is required")
 	}
 
 	claims := &JWTClaims{
 		UserName: userName,
+		Role:     role,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(ext),
 			IssuedAt:  jwt.NewNumericDate(iat),
@@ -50,9 +52,10 @@ func (p *DefaultJWTProvider) GenerateAccessToken(userName string, ext, iat, notB
 	return token.SignedString([]byte(p.secret))
 }
 
-func (p *DefaultJWTProvider) GenerateRefreshToken(userName string, ext, iat, notBefore time.Time) (string, error) {
+func (p *DefaultJWTProvider) GenerateRefreshToken(userName, role string, ext, iat, notBefore time.Time) (string, error) {
 	refreshToken, err := p.GenerateAccessToken(
 		userName,
+		role,
 		ext,
 		iat,
 		notBefore,
