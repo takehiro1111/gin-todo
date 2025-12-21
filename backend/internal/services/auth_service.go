@@ -11,6 +11,11 @@ import (
 	"time"
 )
 
+type AuthService interface {
+	Register(name, email, password string) (string, error)
+	Login(email, password string) (string, error)
+}
+
 type AuthServiceImpl struct {
 	userRepo        repositories.UserRepository
 	passwordManager utils.PasswordManager
@@ -18,7 +23,7 @@ type AuthServiceImpl struct {
 	accessTokenTTL  time.Duration
 }
 
-type RegisterProvider struct {
+type AuthenticateProvider struct {
 	Email    string `validate:"emailCustom"`
 	Password string `validate:"passwordCustom"`
 }
@@ -50,9 +55,9 @@ func (s *AuthServiceImpl) Register(name, email, password string) (string, error)
 	validate.RegisterValidation("emailCustom", emailValidate)
 	validate.RegisterValidation("passwordCustom", passwordValidate)
 
-	err := validate.Struct(RegisterProvider{Email: email, Password: password})
+	err := validate.Struct(AuthenticateProvider{Email: email, Password: password})
 	if err != nil {
-		return "", fmt.Errorf("failed validation: %w", err)
+		return "", fmt.Errorf("failed to validation: %w", err)
 	}
 
 	user, err := s.userRepo.FindByEmail(email)
@@ -66,7 +71,7 @@ func (s *AuthServiceImpl) Register(name, email, password string) (string, error)
 
 	hashedPassword, err := s.passwordManager.HashPassword(password)
 	if err != nil {
-		return "", fmt.Errorf("failed HashPassword: %w", err)
+		return "", fmt.Errorf("failed to hash password: %w", err)
 	}
 
 	newUser := models.User{
@@ -87,6 +92,49 @@ func (s *AuthServiceImpl) Register(name, email, password string) (string, error)
 	token, err := s.jwtProvider.GenerateAccessToken(
 		newUser.Name,
 		models.RoleUser,
+		exp, // 有効期限
+		now, // 発行時刻
+		now, // 有効開始時刻
+	)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate token: %w", err)
+	}
+
+	return token, nil
+}
+
+func (s *AuthServiceImpl) Login(email, password string) (string, error) {
+	validate := validator.New()
+	validate.RegisterValidation("emailCustom", emailValidate)
+	validate.RegisterValidation("passwordCustom", passwordValidate)
+
+	err := validate.Struct(AuthenticateProvider{Email: email, Password: password})
+	if err != nil {
+		return "", fmt.Errorf("failed validation: %w", err)
+	}
+
+	// メールアドレス, パスワードの付け合わせ
+	user, err := s.userRepo.FindByEmail(email)
+	if err != nil {
+		return "", err
+	}
+
+	if user == nil {
+		return "", fmt.Errorf("invalid credentials")
+	}
+
+	err = s.passwordManager.CheckPassword(user.PasswordHash, password)
+	if err != nil {
+		return "", fmt.Errorf("failed to check password: %w", err)
+	}
+
+	// JWT生成
+	now := time.Now()
+	exp := now.Add(s.accessTokenTTL)
+
+	token, err := s.jwtProvider.GenerateAccessToken(
+		user.Name,
+		user.RoleName,
 		exp, // 有効期限
 		now, // 発行時刻
 		now, // 有効開始時刻
