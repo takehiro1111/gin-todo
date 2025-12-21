@@ -1,8 +1,8 @@
 package models
 
 const (
-	RoleAdmin = 1
-	RoleUser  = 2
+	RoleAdmin = "admin"
+	RoleUser  = "user"
 )
 
 type UserRole struct {

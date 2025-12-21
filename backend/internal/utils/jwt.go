@@ -8,8 +8,8 @@ import (
 )
 
 type JWTProvider interface {
-	GenerateAccessToken(userName string, expirationTime, issuedAt, notBefore time.Time) (string, error)
-	GenerateRefreshToken(userName string, ext, iat, notBefore time.Time) (string, error)
+	GenerateAccessToken(userName, role string, expirationTime, issuedAt, notBefore time.Time) (string, error)
+	GenerateRefreshToken(userName, role string, ext, iat, notBefore time.Time) (string, error)
 	VerifyJWT(tokenString string) (*JWTClaims, error)
 }
 
@@ -30,7 +30,6 @@ func NewDefaultJWTProvider(jwtSecret, issuer string) *DefaultJWTProvider {
 		issuer: issuer,
 	}
 }
-
 func (p *DefaultJWTProvider) GenerateAccessToken(userName, role string, ext, iat, notBefore time.Time) (string, error) {
 	if p.secret == "" {
 		return "", errors.New("jwt secret is required")
