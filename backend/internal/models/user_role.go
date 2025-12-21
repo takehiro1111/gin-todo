@@ -1,5 +1,10 @@
 package models
 
+const (
+	RoleAdmin = 1
+	RoleUser  = 2
+)
+
 type UserRole struct {
 	BaseModel
 	Name         string `json:"name" gorm:"type:varchar(30);not null;index:idx_user_roles_name"`
