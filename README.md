@@ -390,7 +390,7 @@ psql -U gin -h localhost -d gin-todo
 - [x] `internal/services/auth_service.go` - AuthService 構造体定義
 - [x] `internal/services/auth_service.go` - Register() メソッド実装
 - [x] `internal/services/auth_service.go` - Login() メソッド実装
-- [ ] `internal/services/auth_service.go` - RefreshToken() メソッド実装
+- [x] `internal/services/auth_service.go` - RefreshToken() メソッド実装
 - ~~ [ ] `internal/services/auth_service.go` - Logout() メソッド実装 ~~
   - JWTはステートレスのためサーバーでトークンを削除するのではなく、フロント側でローカルストレージやCookieから削除する
 
