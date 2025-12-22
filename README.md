@@ -387,11 +387,12 @@ psql -U gin -h localhost -d gin-todo
 - [x] `internal/middleware/auth.go` - RoleMiddleware() 実装（Admin権限チェック）
 
 ##### 6-4. AuthService（認証ロジック）
-- [ ] `internal/services/auth_service.go` - AuthService 構造体定義
-- [ ] `internal/services/auth_service.go` - Register() メソッド実装
-- [ ] `internal/services/auth_service.go` - Login() メソッド実装
+- [x] `internal/services/auth_service.go` - AuthService 構造体定義
+- [x] `internal/services/auth_service.go` - Register() メソッド実装
+- [x] `internal/services/auth_service.go` - Login() メソッド実装
 - [ ] `internal/services/auth_service.go` - RefreshToken() メソッド実装
-- [ ] `internal/services/auth_service.go` - Logout() メソッド実装
+- ~~ [ ] `internal/services/auth_service.go` - Logout() メソッド実装 ~~
+  - JWTはステートレスのためサーバーでトークンを削除するのではなく、フロント側でローカルストレージやCookieから削除する
 
 > [!NOTE]
 > - ユーザーのCRUD操作は主に認証か管理者機能に紐づく
@@ -449,7 +450,7 @@ psql -U gin -h localhost -d gin-todo
 
 ---
 
-#### 10. 動作確認（Postman）
+#### 10. 動作確認（Swagger）
 
 - [ ] POST /api/v1/auth/register - ユーザー登録テスト
 - [ ] POST /api/v1/auth/login - ログインテスト（Cookie確認）
@@ -551,7 +552,7 @@ psql -U gin -h localhost -d gin-todo
   - [ ] APIとの統合
 
 ### フェーズ3: インフラ実装(並行して作る)
-- [ ] EKSのpodへデプロイ
+- [ ] ECSのpodへデプロイ
 
 ### フェーズ4: CI/CD
 - [ ] GithubActions
