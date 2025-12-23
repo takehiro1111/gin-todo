@@ -390,7 +390,7 @@ psql -U gin -h localhost -d gin-todo
 - [x] `internal/services/auth_service.go` - AuthService 構造体定義
 - [x] `internal/services/auth_service.go` - Register() メソッド実装
 - [x] `internal/services/auth_service.go` - Login() メソッド実装
-- [ ] `internal/services/auth_service.go` - RefreshToken() メソッド実装
+- [x] `internal/services/auth_service.go` - RefreshToken() メソッド実装
 - ~~ [ ] `internal/services/auth_service.go` - Logout() メソッド実装 ~~
   - JWTはステートレスのためサーバーでトークンを削除するのではなく、フロント側でローカルストレージやCookieから削除する
 
@@ -546,13 +546,13 @@ psql -U gin -h localhost -d gin-todo
 ---
 
 
-### フェーズ2: フロントエンド実装
+### フェーズ2: フロントエンド実装(TypeScript + Remix予定)
 - [ ] フロントエンド開発
   - [ ] UI実装
   - [ ] APIとの統合
 
 ### フェーズ3: インフラ実装(並行して作る)
-- [ ] ECSのpodへデプロイ
+- [ ] ECSへデプロイ
 
 ### フェーズ4: CI/CD
 - [ ] GithubActions

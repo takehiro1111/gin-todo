@@ -14,6 +14,7 @@ import (
 type AuthService interface {
 	Register(name, email, password string) (string, error)
 	Login(email, password string) (string, error)
+	RefreshToken(refreshToken string) (*TokenPair, error)
 }
 
 type AuthServiceImpl struct {
@@ -21,11 +22,24 @@ type AuthServiceImpl struct {
 	passwordManager utils.PasswordManager
 	jwtProvider     utils.JWTProvider
 	accessTokenTTL  time.Duration
+	refreshTokenTTL time.Duration
 }
 
 type AuthenticateProvider struct {
 	Email    string `validate:"emailCustom"`
 	Password string `validate:"passwordCustom"`
+}
+
+type TokenPair struct {
+	AccessToken  string
+	RefreshToken string
+}
+
+func NewTokenPair(accessToken, refreshToken string) *TokenPair {
+	return &TokenPair{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+	}
 }
 
 func emailValidate(fl validator.FieldLevel) bool {
@@ -144,4 +158,49 @@ func (s *AuthServiceImpl) Login(email, password string) (string, error) {
 	}
 
 	return token, nil
+}
+
+func (s *AuthServiceImpl) RefreshToken(refreshToken string) (*TokenPair, error) {
+	claims, err := s.jwtProvider.VerifyJWT(refreshToken)
+	if err != nil {
+		return nil, fmt.Errorf("failed to verify refresh token: %w", err)
+	}
+
+	user, err := s.userRepo.FindByName(claims.UserName)
+	if err != nil {
+		return nil, fmt.Errorf("invalid claim from verify refresh token: %w", err)
+	}
+
+	if user == nil {
+		return nil, fmt.Errorf("user not found")
+	}
+
+	now := time.Now()
+	accessTokenExp := now.Add(s.accessTokenTTL)
+	refreshTokenExp := now.Add(s.refreshTokenTTL)
+
+	newAccessToken, err := s.jwtProvider.GenerateAccessToken(
+		user.Name,
+		user.RoleName,
+		accessTokenExp,
+		now,
+		now,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate access token: %w", err)
+	}
+
+	newRefreshToken, err := s.jwtProvider.GenerateRefreshToken(
+		user.Name,
+		user.RoleName,
+		refreshTokenExp,
+		now,
+		now,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate refresh token: %w", err)
+	}
+
+	tokenPair := NewTokenPair(newAccessToken, newRefreshToken)
+	return tokenPair, nil
 }

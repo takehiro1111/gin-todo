@@ -12,6 +12,7 @@ import (
 type UserRepository interface {
 	Create(user *models.User) error
 	FindByID(id uint) (*models.User, error)
+	FindByName(name string) (*models.User, error)
 	FindByEmail(email string) (*models.User, error)
 	FindAll() ([]models.User, error)
 	Update(user *models.User) error
@@ -48,6 +49,20 @@ func (r *userRepositoryImpl) FindByID(id uint) (*models.User, error) {
 			return nil, errors.New("user not found by ID")
 		}
 		return nil, fmt.Errorf("failed to find user by ID: %v", err)
+	}
+
+	return &user, nil
+}
+
+func (r *userRepositoryImpl) FindByName(name string) (*models.User, error) {
+	ctx := context.Background()
+
+	user, err := gorm.G[models.User](r.db).Where("name = ?", name).First(ctx)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("user not found by Name")
+		}
+		return nil, fmt.Errorf("failed to find user by Name: %v", err)
 	}
 
 	return &user, nil
