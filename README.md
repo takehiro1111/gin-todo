@@ -546,13 +546,13 @@ psql -U gin -h localhost -d gin-todo
 ---
 
 
-### フェーズ2: フロントエンド実装
+### フェーズ2: フロントエンド実装(TypeScript + Remix予定)
 - [ ] フロントエンド開発
   - [ ] UI実装
   - [ ] APIとの統合
 
 ### フェーズ3: インフラ実装(並行して作る)
-- [ ] ECSのpodへデプロイ
+- [ ] ECSへデプロイ
 
 ### フェーズ4: CI/CD
 - [ ] GithubActions
