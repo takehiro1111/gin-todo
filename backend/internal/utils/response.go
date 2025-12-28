@@ -44,29 +44,41 @@ func (*RealTimeProvider) Now() time.Time {
 	return time.Now()
 }
 
-func ResponseSuccess(c *gin.Context, statusCode int, message string, data interface{}, timeProvider TimeProvider) {
+func ResponseSuccess(c *gin.Context, statusCode int, message string, data interface{}, timeProvider TimeProvider) error {
+	jstTimeStamp := ToJSTLocalTime(timeProvider.Now())
+
 	c.JSON(statusCode, SuccessResponse{
 		Success:   true,
 		Message:   message,
 		Data:      data,
-		Timestamp: timeProvider.Now(),
+		Timestamp: jstTimeStamp,
 	})
+
+	return nil
 }
 
-func ResponseError(c *gin.Context, statusCode int, message string, err string, timeProvider TimeProvider) {
+func ResponseError(c *gin.Context, statusCode int, message string, errMsg string, timeProvider TimeProvider) error {
+	jstTimeStamp := ToJSTLocalTime(timeProvider.Now())
+
 	c.JSON(statusCode, ErrorResponse{
 		Success:   false,
 		Message:   message,
-		Error:     err,
-		Timestamp: timeProvider.Now(),
+		Error:     errMsg,
+		Timestamp: jstTimeStamp,
 	})
+
+	return nil
 }
 
-func ResponseValidationError(c *gin.Context, statusCode int, message string, errors []ValidationError, timeProvider TimeProvider) {
+func ResponseValidationError(c *gin.Context, statusCode int, message string, errMsgs []ValidationError, timeProvider TimeProvider) error {
+	jstTimeStamp := ToJSTLocalTime(timeProvider.Now())
+
 	c.JSON(statusCode, ValidationErrorResponse{
 		Success:   false,
 		Message:   message,
-		Errors:    errors,
-		Timestamp: timeProvider.Now(),
+		Errors:    errMsgs,
+		Timestamp: jstTimeStamp,
 	})
+
+	return nil
 }
