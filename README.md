@@ -403,9 +403,9 @@ psql -U gin -h localhost -d gin-todo
 #### 7. コントローラー層（Handler）の実装
 
 ##### 7-1. レスポンスヘルパー
-- [ ] `internal/utils/response.go` - SuccessResponse() 関数実装
-- [ ] `internal/utils/response.go` - ErrorResponse() 関数実装
-- [ ] `internal/utils/response.go` - ValidationErrorResponse() 関数実装
+- [x] `internal/utils/response.go` - SuccessResponse() 関数実装
+- [x] `internal/utils/response.go` - ErrorResponse() 関数実装
+- [x] `internal/utils/response.go` - ValidationErrorResponse() 関数実装
 
 ##### 7-2. 認証コントローラー
 - [ ] `internal/controllers/auth_controller.go` - AuthController 構造体定義
