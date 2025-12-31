@@ -13,6 +13,7 @@ type AuthController interface {
 	Register(c *gin.Context)
 	Login(c *gin.Context)
 	RefreshToken(c *gin.Context)
+	Logout(c *gin.Context)
 }
 
 type AuthControllerImpl struct {
@@ -116,4 +117,8 @@ func (a *AuthControllerImpl) RefreshToken(c *gin.Context) {
 	}
 
 	utils.ResponseSuccess(c, http.StatusOK, "generate refresh token successfully", token, a.timeProvider)
+}
+
+func (a *AuthControllerImpl) Logout(c *gin.Context) {
+	utils.ResponseSuccess(c, http.StatusOK, "logout successfully", nil, a.timeProvider)
 }
