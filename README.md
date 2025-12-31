@@ -415,6 +415,9 @@ psql -U gin -h localhost -d gin-todo
 - [x] `internal/controllers/auth_controller.go` - RefreshToken() ハンドラ実装
 - [x] `internal/controllers/auth_controller.go` - Logout() ハンドラ実装（Cookie削除）
 
+> [!IMPORTANT]
+> Logoutの処理はひとまずJWTで実装不要だが、後からCookieの処理を実装する際にロジックを付け足す。
+
 ##### 7-3. タスクコントローラー
 - [ ] `internal/controllers/task_controller.go` - TaskController 構造体定義
 - [ ] `internal/controllers/task_controller.go` - NewTaskController() コンストラクタ
