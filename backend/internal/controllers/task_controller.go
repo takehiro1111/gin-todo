@@ -118,3 +118,28 @@ func (t *TaskControllerImpl) GetTaskByID(c *gin.Context) {
 
 	utils.ResponseSuccess(c, http.StatusOK, "success get task by id", task, t.timeProvider)
 }
+
+func (t *TaskControllerImpl) DeleteTask(c *gin.Context) {
+	idStr := c.Param("id")
+	idUint64, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil {
+		utils.ResponseError(c, http.StatusBadRequest,
+			"invalid id",
+			err.Error(),
+			t.timeProvider,
+		)
+		return
+	}
+
+	err = t.taskService.DeleteTask(c, uint(idUint64))
+	if err != nil {
+		utils.ResponseError(c, http.StatusInternalServerError,
+			"failed delete task",
+			err.Error(),
+			t.timeProvider,
+		)
+		return
+	}
+
+	utils.ResponseSuccess(c, http.StatusOK, "success delete task", nil, t.timeProvider)
+}
