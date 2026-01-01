@@ -29,12 +29,24 @@ type TaskControllerImpl struct {
 type CreateRequest struct {
 	Title       string     `json:"title" binding:"required"`
 	Description string     `json:"description"`
-	StatusID    *int64     `json:"status_id"`
+	StatusID    int64      `json:"status_id"`
 	Priority    string     `json:"priority"`
 	DueDate     *time.Time `json:"due_date"`
 }
 
-func NewTaskControlkler(taskService services.TaskService, timeProvider *utils.RealTimeProvider) *TaskControllerImpl {
+type UpdateRequest struct {
+	Title       string     `json:"title"  binding:"required"`
+	Description string     `json:"description"`
+	StatusID    int64      `json:"status_id"`
+	Priority    string     `json:"priority"`
+	DueDate     *time.Time `json:"due_date"`
+}
+
+type UpdateTaskStatusRequest struct {
+	StatusID int64 `json:"status_id" binding:"required"`
+}
+
+func NewTaskController(taskService services.TaskService, timeProvider *utils.RealTimeProvider) *TaskControllerImpl {
 	return &TaskControllerImpl{
 		taskService:  taskService,
 		timeProvider: timeProvider,
@@ -70,18 +82,12 @@ func (t *TaskControllerImpl) CreateTask(c *gin.Context) {
 	task := &models.Task{
 		Title:       req.Title,
 		Description: req.Description,
+		StatusID:    req.StatusID,
 		Priority:    req.Priority,
 		DueDate:     req.DueDate,
 	}
 
-	// StatusIDの入力が見られない場合のバリデーション
-	if req.StatusID != nil {
-		task.StatusID = *req.StatusID
-	} else {
-		task.StatusID = 1 // 一旦、便宜上1として後から正しいデフォルト値を
-	}
-
-	result, err := t.taskService.CreateTask(c, task)
+	data, err := t.taskService.CreateTask(c, task)
 	if err != nil {
 		utils.ResponseError(c, http.StatusInternalServerError,
 			"failed create task",
@@ -91,7 +97,7 @@ func (t *TaskControllerImpl) CreateTask(c *gin.Context) {
 		return
 	}
 
-	utils.ResponseSuccess(c, http.StatusOK, "success create task", result, t.timeProvider)
+	utils.ResponseSuccess(c, http.StatusCreated, "success create task", data, t.timeProvider)
 }
 
 func (t *TaskControllerImpl) GetTaskByID(c *gin.Context) {
@@ -106,7 +112,7 @@ func (t *TaskControllerImpl) GetTaskByID(c *gin.Context) {
 		return
 	}
 
-	task, err := t.taskService.GetTaskByID(c, uint(idUint64))
+	data, err := t.taskService.GetTaskByID(c, uint(idUint64))
 	if err != nil {
 		utils.ResponseError(c, http.StatusInternalServerError,
 			"failed get task by id",
@@ -116,7 +122,88 @@ func (t *TaskControllerImpl) GetTaskByID(c *gin.Context) {
 		return
 	}
 
-	utils.ResponseSuccess(c, http.StatusOK, "success get task by id", task, t.timeProvider)
+	utils.ResponseSuccess(c, http.StatusOK, "success get task by id", data, t.timeProvider)
+}
+
+func (t *TaskControllerImpl) UpdateTask(c *gin.Context) {
+	idStr := c.Param("id")
+	idUint64, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil {
+		utils.ResponseError(c, http.StatusBadRequest,
+			"invalid id",
+			err.Error(),
+			t.timeProvider,
+		)
+		return
+	}
+
+	var req UpdateRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		// loggerを実装予定
+		utils.ResponseError(c, http.StatusBadRequest,
+			"invalid request",
+			err.Error(),
+			t.timeProvider,
+		)
+		return
+	}
+
+	task := &models.Task{
+		BaseModel:   models.BaseModel{ID: uint(idUint64)},
+		Title:       req.Title,
+		Description: req.Description,
+		StatusID:    req.StatusID,
+		Priority:    req.Priority,
+		DueDate:     req.DueDate,
+	}
+
+	data, err := t.taskService.UpdateTask(c, task)
+	if err != nil {
+		utils.ResponseError(c, http.StatusInternalServerError,
+			"failed update task",
+			err.Error(),
+			t.timeProvider,
+		)
+		return
+	}
+
+	utils.ResponseSuccess(c, http.StatusOK, "success update task", data, t.timeProvider)
+}
+
+func (t *TaskControllerImpl) UpdateTaskStatus(c *gin.Context) {
+	idStr := c.Param("id")
+	idUint64, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil {
+		utils.ResponseError(c, http.StatusBadRequest,
+			"invalid id",
+			err.Error(),
+			t.timeProvider,
+		)
+		return
+	}
+
+	var req UpdateTaskStatusRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		// loggerを実装予定
+		utils.ResponseError(c, http.StatusBadRequest,
+			"invalid request",
+			err.Error(),
+			t.timeProvider,
+		)
+		return
+	}
+
+	err = t.taskService.UpdateTaskStatus(c, uint(idUint64), req.StatusID)
+	if err != nil {
+		utils.ResponseError(c, http.StatusInternalServerError,
+			"failed update task status id",
+			err.Error(),
+			t.timeProvider,
+		)
+		return
+	}
+
+	utils.ResponseSuccess(c, http.StatusOK, "success update task status id", nil, t.timeProvider)
 }
 
 func (t *TaskControllerImpl) DeleteTask(c *gin.Context) {
