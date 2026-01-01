@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -93,27 +94,27 @@ func (t *TaskControllerImpl) CreateTask(c *gin.Context) {
 	utils.ResponseSuccess(c, http.StatusOK, "success create task", result, t.timeProvider)
 }
 
-// パスパラメータのパースをする必要ある
-// func (t *TaskControllerImpl) GetTaskByID(c *gin.Context) {
-// 	var req GetTaskByIDRequest
-// 	if err := c.ShouldBindJSON(&req); err != nil {
-// 		utils.ResponseError(c, http.StatusBadRequest,
-// 			"invalid request",
-// 			err.Error(),
-// 			t.timeProvider,
-// 		)
-// 		return
-// 	}
+func (t *TaskControllerImpl) GetTaskByID(c *gin.Context) {
+	idStr := c.Param("id")
+	idUint64, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil {
+		utils.ResponseError(c, http.StatusBadRequest,
+			"invalid id",
+			err.Error(),
+			t.timeProvider,
+		)
+		return
+	}
 
-// 	task, err := t.taskService.GetTaskByID(c, req.ID)
-// 	if err != nil  {
-// 		utils.ResponseError(c, http.StatusInternalServerError,
-// 			"failed get task by id",
-// 			err.Error(),
-// 			t.timeProvider,
-// 		)
-// 		return
-// 	}
+	task, err := t.taskService.GetTaskByID(c, uint(idUint64))
+	if err != nil {
+		utils.ResponseError(c, http.StatusInternalServerError,
+			"failed get task by id",
+			err.Error(),
+			t.timeProvider,
+		)
+		return
+	}
 
-// 	utils.ResponseSuccess(c, http.StatusOK, "success get task by id", task, t.timeProvider)
-// }
+	utils.ResponseSuccess(c, http.StatusOK, "success get task by id", task, t.timeProvider)
+}
