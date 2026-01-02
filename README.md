@@ -408,12 +408,15 @@ psql -U gin -h localhost -d gin-todo
 - [x] `internal/utils/response.go` - ValidationErrorResponse() 関数実装
 
 ##### 7-2. 認証コントローラー
-- [ ] `internal/controllers/auth_controller.go` - AuthController 構造体定義
-- [ ] `internal/controllers/auth_controller.go` - NewAuthController() コンストラクタ
-- [ ] `internal/controllers/auth_controller.go` - Register() ハンドラ実装
-- [ ] `internal/controllers/auth_controller.go` - Login() ハンドラ実装（Cookie設定含む）
-- [ ] `internal/controllers/auth_controller.go` - RefreshToken() ハンドラ実装
-- [ ] `internal/controllers/auth_controller.go` - Logout() ハンドラ実装（Cookie削除）
+- [x] `internal/controllers/auth_controller.go` - AuthController 構造体定義
+- [x] `internal/controllers/auth_controller.go` - NewAuthController() コンストラクタ
+- [x] `internal/controllers/auth_controller.go` - Register() ハンドラ実装
+- [x] `internal/controllers/auth_controller.go` - Login() ハンドラ実装（Cookie設定含む）
+- [x] `internal/controllers/auth_controller.go` - RefreshToken() ハンドラ実装
+- [x] `internal/controllers/auth_controller.go` - Logout() ハンドラ実装（Cookie削除）
+
+> [!IMPORTANT]
+> Logoutの処理はひとまずJWTで実装不要だが、後からCookieの処理を実装する際にロジックを付け足す。
 
 ##### 7-3. タスクコントローラー
 - [ ] `internal/controllers/task_controller.go` - TaskController 構造体定義
