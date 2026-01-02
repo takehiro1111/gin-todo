@@ -79,7 +79,19 @@ func (t *TaskControllerImpl) CreateTask(c *gin.Context) {
 		return
 	}
 
+	// middlewareでsetしているginのcontextから取得
+	userID, exist := c.Get("user_id")
+	if !exist {
+		utils.ResponseError(c, http.StatusUnauthorized,
+			"invalid user access",
+			"userID not found in context",
+			t.timeProvider,
+		)
+		return
+	}
+
 	task := &models.Task{
+		UserID:      userID.(uint),
 		Title:       req.Title,
 		Description: req.Description,
 		StatusID:    req.StatusID,
@@ -148,8 +160,19 @@ func (t *TaskControllerImpl) UpdateTask(c *gin.Context) {
 		return
 	}
 
+	userID, exist := c.Get("user_id")
+	if !exist {
+		utils.ResponseError(c, http.StatusUnauthorized,
+			"invalid user access",
+			"userID not found in context",
+			t.timeProvider,
+		)
+		return
+	}
+
 	task := &models.Task{
 		BaseModel:   models.BaseModel{ID: uint(idUint64)},
+		UserID:      userID.(uint),
 		Title:       req.Title,
 		Description: req.Description,
 		StatusID:    req.StatusID,

@@ -6,7 +6,7 @@ import (
 
 type Task struct {
 	BaseModel
-	UserID      int64      `json:"user_id" gorm:"index:idx_tasks_user_id;not null"`
+	UserID      uint       `json:"user_id" gorm:"index:idx_tasks_user_id;not null"`
 	Title       string     `json:"title" gorm:"type:varchar(200);not null"`
 	Description string     `json:"description" gorm:"type:text"`
 	StatusID    int64      `json:"status_id" gorm:"index:idx_tasks_status_id;not null"`
