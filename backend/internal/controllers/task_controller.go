@@ -54,7 +54,17 @@ func NewTaskController(taskService services.TaskService, timeProvider *utils.Rea
 }
 
 func (t *TaskControllerImpl) GetTasks(c *gin.Context) {
-	tasks, err := t.taskService.GetAllTasks(c)
+	userID, exist := c.Get("user_id")
+	if !exist {
+		utils.ResponseError(c, http.StatusUnauthorized,
+			"invalid user access",
+			"userID not found in context",
+			t.timeProvider,
+		)
+		return
+	}
+
+	tasks, err := t.taskService.GetAllTasks(c, userID.(uint))
 	if err != nil {
 		utils.ResponseError(c, http.StatusInternalServerError,
 			"failed get tasks",
@@ -124,7 +134,17 @@ func (t *TaskControllerImpl) GetTaskByID(c *gin.Context) {
 		return
 	}
 
-	data, err := t.taskService.GetTaskByID(c, uint(idUint64))
+	userID, exist := c.Get("user_id")
+	if !exist {
+		utils.ResponseError(c, http.StatusUnauthorized,
+			"invalid user access",
+			"userID not found in context",
+			t.timeProvider,
+		)
+		return
+	}
+
+	data, err := t.taskService.GetTaskByID(c, uint(idUint64), userID.(uint))
 	if err != nil {
 		utils.ResponseError(c, http.StatusInternalServerError,
 			"failed get task by id",
@@ -205,6 +225,16 @@ func (t *TaskControllerImpl) UpdateTaskStatus(c *gin.Context) {
 		return
 	}
 
+	userID, exist := c.Get("user_id")
+	if !exist {
+		utils.ResponseError(c, http.StatusUnauthorized,
+			"invalid user access",
+			"userID not found in context",
+			t.timeProvider,
+		)
+		return
+	}
+
 	var req UpdateTaskStatusRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		// loggerを実装予定
@@ -216,7 +246,7 @@ func (t *TaskControllerImpl) UpdateTaskStatus(c *gin.Context) {
 		return
 	}
 
-	err = t.taskService.UpdateTaskStatus(c, uint(idUint64), req.StatusID)
+	err = t.taskService.UpdateTaskStatus(c, uint(idUint64), userID.(uint), req.StatusID)
 	if err != nil {
 		utils.ResponseError(c, http.StatusInternalServerError,
 			"failed update task status id",
@@ -241,7 +271,17 @@ func (t *TaskControllerImpl) DeleteTask(c *gin.Context) {
 		return
 	}
 
-	err = t.taskService.DeleteTask(c, uint(idUint64))
+	userID, exist := c.Get("user_id")
+	if !exist {
+		utils.ResponseError(c, http.StatusUnauthorized,
+			"invalid user access",
+			"userID not found in context",
+			t.timeProvider,
+		)
+		return
+	}
+
+	err = t.taskService.DeleteTask(c, uint(idUint64), userID.(uint))
 	if err != nil {
 		utils.ResponseError(c, http.StatusInternalServerError,
 			"failed delete task",
