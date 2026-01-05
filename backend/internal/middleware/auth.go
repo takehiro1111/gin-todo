@@ -26,6 +26,7 @@ func VerifyRoleAdmin(jwtProvider utils.JWTProvider) gin.HandlerFunc {
 			})
 		}
 
+		c.Set("user_id", claims.UserID)
 		c.Next()
 	}
 }

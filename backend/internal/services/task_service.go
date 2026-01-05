@@ -9,12 +9,12 @@ import (
 
 type TaskService interface {
 	CreateTask(ctx context.Context, task *models.Task) (*models.Task, error)
-	GetTaskByID(ctx context.Context, id uint) (*models.Task, error)
+	GetTaskByID(ctx context.Context, id, userID uint) (*models.Task, error)
 	GetTasksByUserID(ctx context.Context, userID uint) ([]models.Task, error)
-	GetAllTasks(ctx context.Context) ([]models.Task, error)
+	GetAllTasks(ctx context.Context, userID uint) ([]models.Task, error)
 	UpdateTask(ctx context.Context, task *models.Task) (*models.Task, error)
-	UpdateTaskStatus(ctx context.Context, id uint, statusID int64) error
-	DeleteTask(ctx context.Context, id uint) error
+	UpdateTaskStatus(ctx context.Context, id, userID uint, statusID int64) error
+	DeleteTask(ctx context.Context, id, userID uint) error
 }
 
 type TaskServiceImpl struct {
@@ -37,11 +37,11 @@ func (s *TaskServiceImpl) CreateTask(ctx context.Context, task *models.Task) (*m
 	return task, nil
 }
 
-func (s *TaskServiceImpl) GetTaskByID(ctx context.Context, id uint) (*models.Task, error) {
+func (s *TaskServiceImpl) GetTaskByID(ctx context.Context, id, userID uint) (*models.Task, error) {
 	// バリデーションの実装はあと工程で考える
 	// カスタムバリデーションを差し込みたい
 
-	task, err := s.taskRepository.FindByID(ctx, id)
+	task, err := s.taskRepository.FindByID(ctx, id, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -61,11 +61,11 @@ func (s *TaskServiceImpl) GetTasksByUserID(ctx context.Context, userID uint) ([]
 	return tasks, nil
 }
 
-func (s *TaskServiceImpl) GetAllTasks(ctx context.Context) ([]models.Task, error) {
+func (s *TaskServiceImpl) GetAllTasks(ctx context.Context, userID uint) ([]models.Task, error) {
 	// バリデーションの実装はあと工程で考える
 	// カスタムバリデーションを差し込みたい
 
-	tasks, err := s.taskRepository.FindAll(ctx)
+	tasks, err := s.taskRepository.FindAll(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -85,11 +85,11 @@ func (s *TaskServiceImpl) UpdateTask(ctx context.Context, task *models.Task) (*m
 	return task, nil
 }
 
-func (s *TaskServiceImpl) UpdateTaskStatus(ctx context.Context, id uint, statusID int64) error {
+func (s *TaskServiceImpl) UpdateTaskStatus(ctx context.Context, id, userID uint, statusID int64) error {
 	// バリデーションの実装はあと工程で考える
 	// カスタムバリデーションを差し込みたい
 
-	err := s.taskRepository.UpdateStatus(ctx, id, statusID)
+	err := s.taskRepository.UpdateStatus(ctx, id, userID, statusID)
 	if err != nil {
 		return err
 	}
@@ -97,11 +97,11 @@ func (s *TaskServiceImpl) UpdateTaskStatus(ctx context.Context, id uint, statusI
 	return nil
 }
 
-func (s *TaskServiceImpl) DeleteTask(ctx context.Context, id uint) error {
+func (s *TaskServiceImpl) DeleteTask(ctx context.Context, id, userID uint) error {
 	// バリデーションの実装はあと工程で考える
 	// カスタムバリデーションを差し込みたい
 
-	err := s.taskRepository.Delete(ctx, id)
+	err := s.taskRepository.Delete(ctx, id, userID)
 	if err != nil {
 		return err
 	}

@@ -419,14 +419,14 @@ psql -U gin -h localhost -d gin-todo
 > Logoutの処理はひとまずJWTで実装不要だが、後からCookieの処理を実装する際にロジックを付け足す。
 
 ##### 7-3. タスクコントローラー
-- [ ] `internal/controllers/task_controller.go` - TaskController 構造体定義
-- [ ] `internal/controllers/task_controller.go` - NewTaskController() コンストラクタ
-- [ ] `internal/controllers/task_controller.go` - GetTasks() ハンドラ実装（クエリパラメータ処理）
-- [ ] `internal/controllers/task_controller.go` - CreateTask() ハンドラ実装
-- [ ] `internal/controllers/task_controller.go` - GetTaskByID() ハンドラ実装
-- [ ] `internal/controllers/task_controller.go` - UpdateTask() ハンドラ実装
-- [ ] `internal/controllers/task_controller.go` - UpdateTaskStatus() ハンドラ実装
-- [ ] `internal/controllers/task_controller.go` - DeleteTask() ハンドラ実装
+- [x] `internal/controllers/task_controller.go` - TaskController 構造体定義
+- [x] `internal/controllers/task_controller.go` - NewTaskController() コンストラクタ
+- [x] `internal/controllers/task_controller.go` - GetTasks() ハンドラ実装（クエリパラメータ処理）
+- [x] `internal/controllers/task_controller.go` - CreateTask() ハンドラ実装
+- [x] `internal/controllers/task_controller.go` - GetTaskByID() ハンドラ実装
+- [x] `internal/controllers/task_controller.go` - UpdateTask() ハンドラ実装
+- [x] `internal/controllers/task_controller.go` - UpdateTaskStatus() ハンドラ実装
+- [x] `internal/controllers/task_controller.go` - DeleteTask() ハンドラ実装
 
 ---
 
@@ -578,4 +578,8 @@ exit status 1
 $psql -U gin -d gin-todo -h localhost -p 5432 -c "UPDATE schema_migrations SET dirty = false;"
 Password for user gin:
 UPDATE 1
+```
+## ローカルでDBへの接続
+```zsh
+docker compose exec gin-todo-postgres psql -U gin -d gin-todo
 ```
