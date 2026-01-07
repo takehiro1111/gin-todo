@@ -457,14 +457,14 @@ psql -U gin -h localhost -d gin-todo
 
 #### 9. main.go の実装
 
-- [ ] `cmd/api/main.go` - 環境変数読み込み
-- [ ] `cmd/api/main.go` - DB接続初期化
-- [ ] `cmd/api/main.go` - Repository 初期化
-- [ ] `cmd/api/main.go` - Service 初期化
-- [ ] `cmd/api/main.go` - Controller 初期化
-- [ ] `cmd/api/main.go` - Router 設定
+- [x] `cmd/api/main.go` - 環境変数読み込み
+- [x] `cmd/api/main.go` - DB接続初期化
+- [x] `cmd/api/main.go` - Repository 初期化
+- [x] `cmd/api/main.go` - Service 初期化
+- [x] `cmd/api/main.go` - Controller 初期化
+- [x] `cmd/api/main.go` - Router 設定
 - [ ] `cmd/api/main.go` - Graceful Shutdown 実装
-- [ ] `cmd/api/main.go` - サーバー起動
+- [x] `cmd/api/main.go` - サーバー起動
 
 ---
 
