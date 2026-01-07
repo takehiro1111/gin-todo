@@ -577,8 +577,16 @@ psql -U gin -h localhost -d gin-todo
 
 
 ## Swagger生成
+```zsh
 cd backend
 swag init -g cmd/api/main.go -o docs
+
+# JSONのみ
+swag init --outputTypes json
+
+# YAMLのみ
+swag init --outputTypes yaml
+```
 
 ## migrationで以下のエラーになった場合
 ```zsh
@@ -598,3 +606,6 @@ UPDATE 1
 ```zsh
 docker compose exec gin-todo-postgres psql -U gin -d gin-todo
 ```
+
+## Swaggerのエンドポイント
+http://localhost:8080/swagger/index.html

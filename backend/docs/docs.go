@@ -45,32 +45,6 @@ const docTemplate = `{
                     }
                 }
             }
-        },
-        "/hello": {
-            "get": {
-                "description": "簡単なHello Worldエンドポイント",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "example"
-                ],
-                "summary": "Hello World",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
         }
     },
     "securityDefinitions": {

@@ -27,23 +27,6 @@ paths:
       summary: ヘルスチェック
       tags:
       - health
-  /hello:
-    get:
-      consumes:
-      - application/json
-      description: 簡単なHello Worldエンドポイント
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Hello World
-      tags:
-      - example
 securityDefinitions:
   BearerAuth:
     description: Type "Bearer" followed by a space and JWT token.

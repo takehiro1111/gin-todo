@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
+	_ "github.com/takehiro1111/gin-todo/backend/docs"
 	"github.com/takehiro1111/gin-todo/backend/internal/controllers"
 	"github.com/takehiro1111/gin-todo/backend/internal/middleware"
 	"github.com/takehiro1111/gin-todo/backend/internal/utils"
@@ -43,6 +44,13 @@ func SetupRoutes(r *gin.Engine, authCtrl controllers.AuthController, taskCtrl co
 	// 管理者機能を後で追加する
 }
 
+// HealthCheck godoc
+// @Summary      ヘルスチェック
+// @Description  APIサーバーの稼働状態を確認
+// @Tags         health
+// @Produce      json
+// @Success      200 {object} map[string]string
+// @Router       /health [get]
 func HealthCheck(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status": "ok",
