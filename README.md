@@ -220,6 +220,9 @@ air
 
 # または通常起動
 go run cmd/api/main.go
+
+# 本番で実行する場合
+GIN_MODE=release go run cmd/api/main.go
 ```
 
 ### Frontend セットアップ
@@ -393,6 +396,10 @@ psql -U gin -h localhost -d gin-todo
 - [x] `internal/services/auth_service.go` - RefreshToken() メソッド実装
 - ~~ [ ] `internal/services/auth_service.go` - Logout() メソッド実装 ~~
   - JWTはステートレスのためサーバーでトークンを削除するのではなく、フロント側でローカルストレージやCookieから削除する
+- [ ] `internal/services/auth_service.go` - GetMe() メソッド実装（ユーザー情報取得）
+- [ ] `internal/services/auth_service.go` - ChangePassword() メソッド実装（現パスワード照合、新パスワードハッシュ化）
+- [ ] `internal/services/auth_service.go` - ForgotPassword() メソッド実装（リセットトークン生成、メール送信）
+- [ ] `internal/services/auth_service.go` - ResetPassword() メソッド実装（トークン検証、パスワード更新）
 
 > [!NOTE]
 > - ユーザーのCRUD操作は主に認証か管理者機能に紐づく
@@ -414,6 +421,10 @@ psql -U gin -h localhost -d gin-todo
 - [x] `internal/controllers/auth_controller.go` - Login() ハンドラ実装（Cookie設定含む）
 - [x] `internal/controllers/auth_controller.go` - RefreshToken() ハンドラ実装
 - [x] `internal/controllers/auth_controller.go` - Logout() ハンドラ実装（Cookie削除）
+- [ ] `internal/controllers/auth_controller.go` - GetMe() ハンドラ実装（JWTからuser_id取得、Service呼び出し）
+- [ ] `internal/controllers/auth_controller.go` - ChangePassword() ハンドラ実装（current_password, new_passwordのバインド）
+- [ ] `internal/controllers/auth_controller.go` - ForgotPassword() ハンドラ実装（emailのバインド）
+- [ ] `internal/controllers/auth_controller.go` - ResetPassword() ハンドラ実装（token, new_passwordのバインド）
 
 > [!IMPORTANT]
 > Logoutの処理はひとまずJWTで実装不要だが、後からCookieの処理を実装する際にロジックを付け足す。
@@ -432,11 +443,15 @@ psql -U gin -h localhost -d gin-todo
 
 #### 8. ルーティング設定
 
-- [ ] `internal/routes/routes.go` - SetupRoutes() 関数実装
-- [ ] `internal/routes/routes.go` - 認証なしエンドポイント設定（/auth/register, /auth/login）
-- [ ] `internal/routes/routes.go` - 認証必須エンドポイント設定（/tasks/*）
+- [x] `internal/routes/routes.go` - SetupRoutes() 関数実装
+- [x] `internal/routes/routes.go` - 認証なしエンドポイント設定（/auth/register, /auth/login）
+- [x] `internal/routes/routes.go` - 認証必須エンドポイント設定（/tasks/*）
 - [ ] `internal/routes/routes.go` - Admin権限必須エンドポイント設定（/admin/*）
-- [ ] `internal/routes/routes.go` - ヘルスチェック（/health）設定
+- [x] `internal/routes/routes.go` - ヘルスチェック（/health）設定
+- [ ] `internal/routes/routes.go` - GET /auth/me 設定（要認証）
+- [ ] `internal/routes/routes.go` - PUT /auth/password 設定（要認証）
+- [ ] `internal/routes/routes.go` - POST /auth/forgot 設定（認証不要）
+- [ ] `internal/routes/routes.go` - POST /auth/reset 設定（認証不要）
 
 ---
 

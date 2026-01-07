@@ -44,6 +44,10 @@ func (*RealTimeProvider) Now() time.Time {
 	return time.Now()
 }
 
+func NewRealTimeProvider() *RealTimeProvider {
+	return &RealTimeProvider{}
+}
+
 func ResponseSuccess(c *gin.Context, statusCode int, message string, data interface{}, timeProvider TimeProvider) error {
 	jstTimeStamp := ToJSTLocalTime(timeProvider.Now())
 

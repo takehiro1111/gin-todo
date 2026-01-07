@@ -40,3 +40,8 @@ CDKToolkit: creating CloudFormation changeset...
 ```zsh
 aws cloudformation delete-stack --stack-name GinTodoSsmStack
 ```
+
+## deploy
+```zsh
+cdk deploy
+```
