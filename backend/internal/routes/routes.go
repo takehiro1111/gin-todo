@@ -21,13 +21,20 @@ func SetupRoutes(r *gin.Engine, authCtrl controllers.AuthController, taskCtrl co
 		api.GET("/health", HealthCheck)
 	}
 
-	apiAuth := r.Group("/api/auth")
+	// 認証不要（ログイン前）
+	authPublic := r.Group("/api/auth")
 	{
-		apiAuth.POST("/register", authCtrl.Register)
-		apiAuth.POST("/login", authCtrl.Login)
-		apiAuth.POST("/logout", authCtrl.Logout)
-		apiAuth.POST("/refresh", authCtrl.RefreshToken)
-		// /auth/me  , /auth/refresh , /auth/password , /auth/forgot は追加予定
+		authPublic.POST("/register", authCtrl.Register)
+		authPublic.POST("/login", authCtrl.Login)
+	}
+
+	// 認証必須（ログイン後）
+	authProtected := r.Group("/api/auth")
+	authProtected.Use(middleware.VerifyUser(jwtProvider))
+	{
+		authProtected.POST("/logout", authCtrl.Logout)
+		authProtected.POST("/refresh", authCtrl.RefreshToken)
+		authProtected.GET("/me", authCtrl.GetMe)
 	}
 
 	apiTask := r.Group("/api/task")

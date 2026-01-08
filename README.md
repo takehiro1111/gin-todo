@@ -396,7 +396,7 @@ psql -U gin -h localhost -d gin-todo
 - [x] `internal/services/auth_service.go` - RefreshToken() メソッド実装
 - ~~ [ ] `internal/services/auth_service.go` - Logout() メソッド実装 ~~
   - JWTはステートレスのためサーバーでトークンを削除するのではなく、フロント側でローカルストレージやCookieから削除する
-- [ ] `internal/services/auth_service.go` - GetMe() メソッド実装（ユーザー情報取得）
+- [x] `internal/services/auth_service.go` - GetMe() メソッド実装（ユーザー情報取得）
 - [ ] `internal/services/auth_service.go` - ChangePassword() メソッド実装（現パスワード照合、新パスワードハッシュ化）
 - [ ] `internal/services/auth_service.go` - ForgotPassword() メソッド実装（リセットトークン生成、メール送信）
 - [ ] `internal/services/auth_service.go` - ResetPassword() メソッド実装（トークン検証、パスワード更新）
@@ -421,7 +421,7 @@ psql -U gin -h localhost -d gin-todo
 - [x] `internal/controllers/auth_controller.go` - Login() ハンドラ実装（Cookie設定含む）
 - [x] `internal/controllers/auth_controller.go` - RefreshToken() ハンドラ実装
 - [x] `internal/controllers/auth_controller.go` - Logout() ハンドラ実装（Cookie削除）
-- [ ] `internal/controllers/auth_controller.go` - GetMe() ハンドラ実装（JWTからuser_id取得、Service呼び出し）
+- [x] `internal/controllers/auth_controller.go` - GetMe() ハンドラ実装（JWTからuser_id取得、Service呼び出し）
 - [ ] `internal/controllers/auth_controller.go` - ChangePassword() ハンドラ実装（current_password, new_passwordのバインド）
 - [ ] `internal/controllers/auth_controller.go` - ForgotPassword() ハンドラ実装（emailのバインド）
 - [ ] `internal/controllers/auth_controller.go` - ResetPassword() ハンドラ実装（token, new_passwordのバインド）
@@ -448,7 +448,7 @@ psql -U gin -h localhost -d gin-todo
 - [x] `internal/routes/routes.go` - 認証必須エンドポイント設定（/tasks/*）
 - [ ] `internal/routes/routes.go` - Admin権限必須エンドポイント設定（/admin/*）
 - [x] `internal/routes/routes.go` - ヘルスチェック（/health）設定
-- [ ] `internal/routes/routes.go` - GET /auth/me 設定（要認証）
+- [x] `internal/routes/routes.go` - GET /auth/me 設定（要認証）
 - [ ] `internal/routes/routes.go` - PUT /auth/password 設定（要認証）
 - [ ] `internal/routes/routes.go` - POST /auth/forgot 設定（認証不要）
 - [ ] `internal/routes/routes.go` - POST /auth/reset 設定（認証不要）
