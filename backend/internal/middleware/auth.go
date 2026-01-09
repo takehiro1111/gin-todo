@@ -17,12 +17,14 @@ func VerifyRoleAdmin(jwtProvider utils.JWTProvider) gin.HandlerFunc {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"error": "invalid token",
 			})
+			return
 		}
 
 		if claims.Role != "admin" {
 			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
 				"error": "invalid role",
 			})
+			return
 		}
 
 		c.Set("user_id", claims.UserID)
@@ -39,6 +41,7 @@ func VerifyUser(jwtProvider utils.JWTProvider) gin.HandlerFunc {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"error": "invalid token",
 			})
+			return
 		}
 
 		c.Set("user_id", claims.UserID)
