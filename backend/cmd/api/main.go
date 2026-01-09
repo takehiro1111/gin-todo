@@ -102,13 +102,14 @@ func main() {
 	userRepo := repositories.NewUserRepository(db)
 	taskRepo := repositories.NewTaskRepository(db)
 
-	accessTokenTTL := 15 * time.Minute
+	accessTokenTTL := time.Minute * 15
+	refreshTokenTTL := time.Hour * 24 * 7
 	issuer := "gin-todo-api"
 
 	jwtProvider := utils.NewDefaultJWTProvider(items[services.JwtSecretKey], issuer)
 	timeProvider := utils.NewRealTimeProvider()
 	passwordManager := utils.NewBcryptHasher()
-	authService := services.NewAuthService(userRepo, passwordManager, jwtProvider, accessTokenTTL)
+	authService := services.NewAuthService(userRepo, passwordManager, jwtProvider, accessTokenTTL, refreshTokenTTL)
 	taskService := services.NewTaskService(taskRepo)
 
 	authCtrl := controllers.NewAuthControllerImpl(authService, timeProvider)
