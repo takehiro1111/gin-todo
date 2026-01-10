@@ -499,7 +499,7 @@ psql -U gin -h localhost -d gin-todo
 
 ---
 
-#### 13.パスワード再設定処理 ※後回し
+#### 13.パスワード再設定処理
 - [ ] `internal/services/auth_service.go` - ForgotPassword() メソッド実装（リセットトークン生成、メール送信）
 - [ ] `internal/services/auth_service.go` - ResetPassword() メソッド実装（トークン検証、パスワード更新）
 - [ ] `internal/controllers/auth_controller.go` - ForgotPassword() ハンドラ実装（emailのバインド）
