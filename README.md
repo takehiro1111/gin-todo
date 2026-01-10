@@ -247,26 +247,28 @@ npm run build
 ## API エンドポイント
 
 ### 認証
-- `POST /api/v1/auth/register` - ユーザー登録
-- `POST /api/v1/auth/login` - ログイン
-- `POST /api/v1/auth/refresh` - トークン更新
-- `POST /api/v1/auth/logout` - ログアウト
+- `POST /api/auth/register` - ユーザー登録
+- `POST /api/auth/login` - ログイン
+- `POST /api/auth/refresh` - トークン更新
+- `POST /api/auth/logout` - ログアウト
+- `GET /api/auth/me` - ログインユーザー情報取得（要認証）
+- `PATCH /api/auth/password` - パスワード変更（要認証）
 
 ### タスク (要認証)
-- `GET /api/v1/tasks` - タスク一覧
-- `POST /api/v1/tasks` - タスク作成
-- `GET /api/v1/tasks/:id` - タスク詳細
-- `PUT /api/v1/tasks/:id` - タスク更新
-- `DELETE /api/v1/tasks/:id` - タスク削除
-- `PATCH /api/v1/tasks/:id/status` - ステータス更新
-- `GET /api/v1/tasks/export/csv` - CSV エクスポート
+- `GET /api/tasks` - タスク一覧
+- `POST /api/tasks` - タスク作成
+- `GET /api/tasks/:id` - タスク詳細
+- `PUT /api/tasks/:id` - タスク更新
+- `DELETE /api/tasks/:id` - タスク削除
+- `PATCH /api/tasks/:id/status` - ステータス更新
+- `GET /api/tasks/export/csv` - CSV エクスポート
 
 ### 管理者 (要Admin権限)
-- `GET /api/v1/admin/users` - 全ユーザー一覧
-- `GET /api/v1/admin/tasks` - 全タスク一覧
+- `GET /api/admin/users` - 全ユーザー一覧
+- `GET /api/admin/tasks` - 全タスク一覧
 
 ### WebSocket
-- `GET /api/v1/ws/notifications` - リアルタイム通知
+- `GET /api/ws/notifications` - リアルタイム通知
 
 ### その他
 - `GET /health` - ヘルスチェック
@@ -398,8 +400,6 @@ psql -U gin -h localhost -d gin-todo
   - JWTはステートレスのためサーバーでトークンを削除するのではなく、フロント側でローカルストレージやCookieから削除する
 - [x] `internal/services/auth_service.go` - GetMe() メソッド実装（ユーザー情報取得）
 - [x] `internal/services/auth_service.go` - ChangePassword() メソッド実装（現パスワード照合、新パスワードハッシュ化）
-- [ ] `internal/services/auth_service.go` - ForgotPassword() メソッド実装（リセットトークン生成、メール送信）
-- [ ] `internal/services/auth_service.go` - ResetPassword() メソッド実装（トークン検証、パスワード更新）
 
 > [!NOTE]
 > - ユーザーのCRUD操作は主に認証か管理者機能に紐づく
@@ -424,10 +424,6 @@ psql -U gin -h localhost -d gin-todo
 - [x] `internal/controllers/auth_controller.go` - GetMe() ハンドラ実装（JWTからuser_id取得、Service呼び出し）
 - [x] `internal/controllers/auth_controller.go` - ChangePassword() ハンドラ実装（current_password, new_passwordのバインド）
   - ログイン中のユーザーが現在のパスワードを知っている状態で変更
-- [ ] `internal/controllers/auth_controller.go` - ForgotPassword() ハンドラ実装（emailのバインド）
-  - パスワードを忘れたユーザーがメールでリセットトークンを受け取る
-- [ ] `internal/controllers/auth_controller.go` - ResetPassword() ハンドラ実装（token, new_passwordのバインド）
-  - リセットトークンを使って新しいパスワードを設定
 
 > [!IMPORTANT]
 > Logoutの処理はひとまずJWTで実装不要だが、後からCookieの処理を実装する際にロジックを付け足す。
@@ -449,12 +445,9 @@ psql -U gin -h localhost -d gin-todo
 - [x] `internal/routes/routes.go` - SetupRoutes() 関数実装
 - [x] `internal/routes/routes.go` - 認証なしエンドポイント設定（/auth/register, /auth/login）
 - [x] `internal/routes/routes.go` - 認証必須エンドポイント設定（/tasks/*）
-- [ ] `internal/routes/routes.go` - Admin権限必須エンドポイント設定（/admin/*）
 - [x] `internal/routes/routes.go` - ヘルスチェック（/health）設定
 - [x] `internal/routes/routes.go` - GET /auth/me 設定（要認証）
-- [x] `internal/routes/routes.go` - PUT /auth/password 設定（要認証）
-- [ ] `internal/routes/routes.go` - POST /auth/forgot 設定（認証不要）
-- [ ] `internal/routes/routes.go` - POST /auth/reset 設定（認証不要）
+- [x] `internal/routes/routes.go` - PATCH /auth/password 設定（要認証）
 
 ---
 
@@ -501,12 +494,23 @@ psql -U gin -h localhost -d gin-todo
 - [ ] `internal/services/admin_service.go` - AdminService 実装
 - [ ] `internal/controllers/admin_controller.go` - GetAllUsers() 実装
 - [ ] `internal/controllers/admin_controller.go` - GetAllTasks() 実装
-- [ ] ルーティング追加 - GET /api/v1/admin/users
-- [ ] ルーティング追加 - GET /api/v1/admin/tasks
+- [ ]  `internal/routes/routes.go` - ルーティング追加 - GET /api/admin/users
+- [ ]  `internal/routes/routes.go` - ルーティング追加 - GET /api/admin/tasks
 
 ---
 
-#### 13. エクスポート機能実装
+#### 13.パスワード再設定処理 ※後回し
+- [ ] `internal/services/auth_service.go` - ForgotPassword() メソッド実装（リセットトークン生成、メール送信）
+- [ ] `internal/services/auth_service.go` - ResetPassword() メソッド実装（トークン検証、パスワード更新）
+- [ ] `internal/controllers/auth_controller.go` - ForgotPassword() ハンドラ実装（emailのバインド）
+  - パスワードを忘れたユーザーがメールでリセットトークンを受け取る
+- [ ] `internal/controllers/auth_controller.go` - ResetPassword() ハンドラ実装（token, new_passwordのバインド）
+  - リセットトークンを使って新しいパスワードを設定
+- [ ] `internal/routes/routes.go` - POST /auth/forgot 設定（認証不要）
+- [ ] `internal/routes/routes.go` - POST /auth/reset 設定（認証不要）
+---
+
+#### 14. エクスポート機能実装
 
 - [ ] `internal/controllers/export_controller.go` - ExportController 実装
 - [ ] `internal/controllers/export_controller.go` - ExportTasksCSV() 実装（ストリーミング）
@@ -514,7 +518,7 @@ psql -U gin -h localhost -d gin-todo
 
 ---
 
-#### 14. WebSocket通知実装
+#### 15. WebSocket通知実装
 
 - [ ] `internal/websocket/client.go` - Client 構造体定義
 - [ ] `internal/websocket/hub.go` - Hub 構造体定義（クライアント管理）
@@ -527,7 +531,7 @@ psql -U gin -h localhost -d gin-todo
 
 ---
 
-#### 15. 非機能要件（ミドルウェア）実装
+#### 16. 非機能要件（ミドルウェア）実装
 
 ##### 15-1. ロギング
 - [ ] `internal/middleware/logger.go` - RequestLogger() 実装（リクエストID生成）
