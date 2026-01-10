@@ -570,6 +570,10 @@ psql -U gin -h localhost -d gin-todo
 
 ---
 
+#### 17.書けてないテスト実装
+- Unit
+- API Integration
+
 
 ### フェーズ2: フロントエンド実装(TypeScript + Remix予定)
 - [ ] フロントエンド開発
