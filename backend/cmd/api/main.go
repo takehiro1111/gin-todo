@@ -3,16 +3,17 @@ package main
 import (
 	"context"
 	"log"
-	"net/http"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
-	swaggerFiles "github.com/swaggo/files"
-	ginSwagger "github.com/swaggo/gin-swagger"
 
 	"github.com/takehiro1111/gin-todo/backend/infrastructure/aws"
+	"github.com/takehiro1111/gin-todo/backend/internal/controllers"
 	"github.com/takehiro1111/gin-todo/backend/internal/models"
+	"github.com/takehiro1111/gin-todo/backend/internal/repositories"
+	"github.com/takehiro1111/gin-todo/backend/internal/routes"
 	"github.com/takehiro1111/gin-todo/backend/internal/services"
 	"github.com/takehiro1111/gin-todo/backend/internal/utils"
 )
@@ -43,7 +44,7 @@ func main() {
 		log.Fatalf("failed to generate ssmClient: %v", err)
 	}
 	ctx := context.Background()
-	params, err := services.GetDBAuthenticate(ssmClient, ctx)
+	params, err := services.GetSSMParameter(ssmClient, ctx)
 	if err != nil {
 		log.Fatalf("failed to get ssmParameters: %v", err)
 	}
@@ -59,17 +60,17 @@ func main() {
 
 	intMaxIdleConns, err := strconv.Atoi(maxIdleConns)
 	if err != nil {
-		log.Fatalf("failed read env:%w", err)
+		log.Fatalf("failed read env:%v", err)
 	}
 
 	intMaxOpenConns, err := strconv.Atoi(maxOpenConns)
 	if err != nil {
-		log.Fatalf("failed read env:%w", err)
+		log.Fatalf("failed read env:%v", err)
 	}
 
 	intConnMaxLifetime, err := strconv.Atoi(connMaxLifetime)
 	if err != nil {
-		log.Fatalf("failed read env:%w", err)
+		log.Fatalf("failed read env:%v", err)
 	}
 
 	items := make(map[string]string)
@@ -86,7 +87,7 @@ func main() {
 	tz := "Asia/Tokyo"
 
 	// 後工程で戻り値を活用する
-	_, err = models.DBInit(dbUser, dbPassword, dbHost, dbPort, dbName, sslMode, tz, env, intMaxIdleConns, intMaxOpenConns, intConnMaxLifetime)
+	db, err := models.DBInit(dbUser, dbPassword, dbHost, dbPort, dbName, sslMode, tz, env, intMaxIdleConns, intMaxOpenConns, intConnMaxLifetime)
 	if err != nil {
 		log.Fatalf("db initialization failed: %v", err)
 	}
@@ -98,44 +99,23 @@ func main() {
 		log.Fatalf("migration failed: %v", err)
 	}
 
-	// API v1 routes
-	v1 := r.Group("/api/v1")
-	{
-		v1.GET("/hello", HelloWorld)
-	}
+	userRepo := repositories.NewUserRepository(db)
+	taskRepo := repositories.NewTaskRepository(db)
 
-	// Swagger UI
-	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	accessTokenTTL := time.Minute * 15
+	refreshTokenTTL := time.Hour * 24 * 7
+	issuer := "gin-todo-api"
 
-	// Health check
-	r.GET("/health", HealthCheck)
+	jwtProvider := utils.NewDefaultJWTProvider(items[services.JwtSecretKey], issuer)
+	timeProvider := utils.NewRealTimeProvider()
+	passwordManager := utils.NewBcryptHasher()
+	authService := services.NewAuthService(userRepo, passwordManager, jwtProvider, accessTokenTTL, refreshTokenTTL)
+	taskService := services.NewTaskService(taskRepo)
+
+	authCtrl := controllers.NewAuthControllerImpl(authService, timeProvider)
+	taskCtrl := controllers.NewTaskController(taskService, timeProvider)
+
+	routes.SetupRoutes(r, authCtrl, taskCtrl, jwtProvider)
 
 	r.Run(":8080")
-}
-
-// HelloWorld godoc
-// @Summary      Hello World
-// @Description  簡単なHello Worldエンドポイント
-// @Tags         example
-// @Accept       json
-// @Produce      json
-// @Success      200 {object} map[string]string
-// @Router       /hello [get]
-func HelloWorld(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
-		"message": "Hello World!",
-	})
-}
-
-// HealthCheck godoc
-// @Summary      ヘルスチェック
-// @Description  APIサーバーの稼働状態を確認
-// @Tags         health
-// @Produce      json
-// @Success      200 {object} map[string]string
-// @Router       /health [get]
-func HealthCheck(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
-		"status": "ok",
-	})
 }

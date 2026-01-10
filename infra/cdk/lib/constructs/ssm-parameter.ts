@@ -38,6 +38,11 @@ export class SsmParameterStack extends Stack {
         name: "/gin-todo/db/postgres-ssl-mode",
         value: "disable",
       },
+      {
+        id: "JwtSecretKey",
+        name: "/gin-todo/db/jwt-secret-key",
+        value: ENV.jwtSecretKey,
+      },
     ];
 
     for (const param of stringParams) {

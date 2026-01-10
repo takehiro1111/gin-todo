@@ -8,7 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
 )
 
-func GetDBAuthenticate(ssmClient *ssm.Client, ctx context.Context) (*ssm.GetParametersOutput, error) {
+func GetSSMParameter(ssmClient *ssm.Client, ctx context.Context) (*ssm.GetParametersOutput, error) {
 	paramInput := &ssm.GetParametersInput{
 		Names: []string{
 			PostgresUser,
@@ -17,6 +17,7 @@ func GetDBAuthenticate(ssmClient *ssm.Client, ctx context.Context) (*ssm.GetPara
 			PostgresDBHost,
 			PostgresDBPort,
 			PostgresSslMode,
+			JwtSecretKey,
 		},
 		WithDecryption: aws.Bool(false), // SecureStringは使用してない。
 	}

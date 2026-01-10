@@ -42,6 +42,16 @@ func NewTokenPair(accessToken, refreshToken string) *TokenPair {
 	}
 }
 
+func NewAuthService(userRepo repositories.UserRepository, passwordManager utils.PasswordManager, jwtProvider utils.JWTProvider, accessTokenTTL, refreshTokenTTL time.Duration) *AuthServiceImpl {
+	return &AuthServiceImpl{
+		userRepo:        userRepo,
+		passwordManager: passwordManager,
+		jwtProvider:     jwtProvider,
+		accessTokenTTL:  accessTokenTTL,
+		refreshTokenTTL: refreshTokenTTL,
+	}
+}
+
 func emailValidate(fl validator.FieldLevel) bool {
 	email := fl.Field().String()
 	if email == "" {
