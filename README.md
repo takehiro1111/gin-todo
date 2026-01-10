@@ -397,7 +397,7 @@ psql -U gin -h localhost -d gin-todo
 - ~~ [ ] `internal/services/auth_service.go` - Logout() メソッド実装 ~~
   - JWTはステートレスのためサーバーでトークンを削除するのではなく、フロント側でローカルストレージやCookieから削除する
 - [x] `internal/services/auth_service.go` - GetMe() メソッド実装（ユーザー情報取得）
-- [ ] `internal/services/auth_service.go` - ChangePassword() メソッド実装（現パスワード照合、新パスワードハッシュ化）
+- [x] `internal/services/auth_service.go` - ChangePassword() メソッド実装（現パスワード照合、新パスワードハッシュ化）
 - [ ] `internal/services/auth_service.go` - ForgotPassword() メソッド実装（リセットトークン生成、メール送信）
 - [ ] `internal/services/auth_service.go` - ResetPassword() メソッド実装（トークン検証、パスワード更新）
 
@@ -422,9 +422,12 @@ psql -U gin -h localhost -d gin-todo
 - [x] `internal/controllers/auth_controller.go` - RefreshToken() ハンドラ実装
 - [x] `internal/controllers/auth_controller.go` - Logout() ハンドラ実装（Cookie削除）
 - [x] `internal/controllers/auth_controller.go` - GetMe() ハンドラ実装（JWTからuser_id取得、Service呼び出し）
-- [ ] `internal/controllers/auth_controller.go` - ChangePassword() ハンドラ実装（current_password, new_passwordのバインド）
+- [x] `internal/controllers/auth_controller.go` - ChangePassword() ハンドラ実装（current_password, new_passwordのバインド）
+  - ログイン中のユーザーが現在のパスワードを知っている状態で変更
 - [ ] `internal/controllers/auth_controller.go` - ForgotPassword() ハンドラ実装（emailのバインド）
+  - パスワードを忘れたユーザーがメールでリセットトークンを受け取る
 - [ ] `internal/controllers/auth_controller.go` - ResetPassword() ハンドラ実装（token, new_passwordのバインド）
+  - リセットトークンを使って新しいパスワードを設定
 
 > [!IMPORTANT]
 > Logoutの処理はひとまずJWTで実装不要だが、後からCookieの処理を実装する際にロジックを付け足す。
@@ -449,7 +452,7 @@ psql -U gin -h localhost -d gin-todo
 - [ ] `internal/routes/routes.go` - Admin権限必須エンドポイント設定（/admin/*）
 - [x] `internal/routes/routes.go` - ヘルスチェック（/health）設定
 - [x] `internal/routes/routes.go` - GET /auth/me 設定（要認証）
-- [ ] `internal/routes/routes.go` - PUT /auth/password 設定（要認証）
+- [x] `internal/routes/routes.go` - PUT /auth/password 設定（要認証）
 - [ ] `internal/routes/routes.go` - POST /auth/forgot 設定（認証不要）
 - [ ] `internal/routes/routes.go` - POST /auth/reset 設定（認証不要）
 

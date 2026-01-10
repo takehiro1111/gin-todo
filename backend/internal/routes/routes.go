@@ -35,6 +35,7 @@ func SetupRoutes(r *gin.Engine, authCtrl controllers.AuthController, taskCtrl co
 		authProtected.POST("/logout", authCtrl.Logout)
 		authProtected.POST("/refresh", authCtrl.RefreshToken)
 		authProtected.GET("/me", authCtrl.GetMe)
+		authProtected.PATCH("/password", authCtrl.ChangePassword)
 	}
 
 	apiTask := r.Group("/api/task")

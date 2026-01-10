@@ -18,6 +18,7 @@ type AuthService interface {
 	Login(email, password string) (string, error)
 	RefreshToken(refreshToken string) (*TokenPair, error)
 	GetMe(accessToken string) (*models.User, error)
+	ChangePassword(userID, oldPassword, newPassword string) error
 }
 
 type AuthServiceImpl struct {
@@ -238,4 +239,41 @@ func (s *AuthServiceImpl) GetMe(userID string) (*models.User, error) {
 	}
 
 	return user, nil
+}
+
+func (s *AuthServiceImpl) ChangePassword(userID, oldPassword, newPassword string) error {
+	validate := validator.New()
+	validate.RegisterValidation("passwordCustom", passwordValidate)
+
+	err := validate.Struct(AuthenticateProvider{Password: newPassword})
+	if err != nil {
+		return fmt.Errorf("failed to validation: %w", err)
+	}
+
+	toUintUserID, err := strconv.ParseUint(userID, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to cast userID  : %w", err)
+	}
+
+	user, err := s.userRepo.FindByID(uint(toUintUserID))
+	if err != nil {
+		return fmt.Errorf("failed to find user: %w", err)
+	}
+
+	err = s.passwordManager.CheckPassword(user.PasswordHash, oldPassword)
+	if err != nil {
+		return fmt.Errorf("failed to check password: %w", err)
+	}
+
+	hashedNewPassword, err := s.passwordManager.HashPassword(newPassword)
+	if err != nil {
+		return fmt.Errorf("failed to hash password: %w", err)
+	}
+
+	err = s.userRepo.UpdatePassword(uint(toUintUserID), hashedNewPassword)
+	if err != nil {
+		return fmt.Errorf("failed to update password: %w", err)
+	}
+
+	return nil
 }

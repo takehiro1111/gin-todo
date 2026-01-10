@@ -15,6 +15,7 @@ type AuthController interface {
 	RefreshToken(c *gin.Context)
 	Logout(c *gin.Context)
 	GetMe(c *gin.Context)
+	ChangePassword(c *gin.Context)
 }
 
 type AuthControllerImpl struct {
@@ -38,6 +39,11 @@ type RegisterRequest struct {
 type LoginRequest struct {
 	Email    string `json:"email" binding:"required"`
 	Password string `json:"password" binding:"required"`
+}
+
+type ChangePasswordRequest struct {
+	OldPassword string `json:"old_password" binding:"required"`
+	NewPassword string `json:"new_password" binding:"required"`
 }
 
 type RefreshTokenRequest struct {
@@ -146,4 +152,48 @@ func (a *AuthControllerImpl) GetMe(c *gin.Context) {
 	}
 
 	utils.ResponseSuccess(c, http.StatusOK, "get me successfully", user, a.timeProvider)
+}
+
+func (a *AuthControllerImpl) ChangePassword(c *gin.Context) {
+	userID, exist := c.Get("user_id")
+	if !exist {
+		utils.ResponseError(c, http.StatusUnauthorized,
+			"invalid user access",
+			"userID not found in context",
+			a.timeProvider,
+		)
+		return
+	}
+
+	var req ChangePasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		// loggerを実装予定
+		utils.ResponseError(c, http.StatusBadRequest,
+			"invalid request",
+			err.Error(),
+			a.timeProvider,
+		)
+		return
+	}
+
+	if req.OldPassword == req.NewPassword {
+		utils.ResponseError(c, http.StatusBadRequest,
+			"invalid request",
+			"new password must be different from old password",
+			a.timeProvider,
+		)
+		return
+	}
+
+	err := a.authService.ChangePassword(userID.(string), req.OldPassword, req.NewPassword)
+	if err != nil {
+		utils.ResponseError(c, http.StatusInternalServerError,
+			"failed change password",
+			err.Error(),
+			a.timeProvider,
+		)
+		return
+	}
+
+	utils.ResponseSuccess(c, http.StatusOK, "change password successfully", nil, a.timeProvider)
 }

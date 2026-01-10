@@ -16,6 +16,7 @@ type UserRepository interface {
 	FindByEmail(email string) (*models.User, error)
 	FindAll() ([]models.User, error)
 	Update(user *models.User) error
+	UpdatePassword(id uint, newHashedPassword string) error
 	Delete(id uint) error
 }
 
@@ -97,6 +98,20 @@ func (r *userRepositoryImpl) Update(user *models.User) error {
 	ctx := context.Background()
 
 	_, err := gorm.G[models.User](r.db).Where("id = ?", user.ID).Updates(ctx, *user)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.New("user not found by id")
+		}
+		return fmt.Errorf("failed to find user by id: %v", err)
+	}
+
+	return nil
+}
+
+func (r *userRepositoryImpl) UpdatePassword(id uint, hashedNewPassword string) error {
+	ctx := context.Background()
+
+	_, err := gorm.G[models.User](r.db).Where("id = ?", id).Update(ctx, "PasswordHash", hashedNewPassword)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return errors.New("user not found by id")
