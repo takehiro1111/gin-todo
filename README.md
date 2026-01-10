@@ -466,14 +466,14 @@ psql -U gin -h localhost -d gin-todo
 
 #### 10. 動作確認（Swagger）
 
-- [ ] POST /api/v1/auth/register - ユーザー登録テスト
-- [ ] POST /api/v1/auth/login - ログインテスト（Cookie確認）
-- [ ] POST /api/v1/tasks - タスク作成テスト（要認証）
-- [ ] GET /api/v1/tasks - タスク一覧テスト
-- [ ] GET /api/v1/tasks/:id - タスク詳細テスト
-- [ ] PUT /api/v1/tasks/:id - タスク更新テスト
-- [ ] PATCH /api/v1/tasks/:id/status - ステータス更新テスト
-- [ ] DELETE /api/v1/tasks/:id - タスク削除テスト
+- [ ] POST /api/auth/register - ユーザー登録テスト
+- [ ] POST /api/auth/login - ログインテスト（Cookie確認）
+- [ ] POST /api/tasks - タスク作成テスト（要認証）
+- [ ] GET /api/tasks - タスク一覧テスト
+- [ ] GET /api/tasks/:id - タスク詳細テスト
+- [ ] PUT /api/tasks/:id - タスク更新テスト
+- [ ] PATCH /api/tasks/:id/status - ステータス更新テスト
+- [ ] DELETE /api/tasks/:id - タスク削除テスト
 - [ ] 権限エラーテスト（他人のタスク操作）
 
 ---
@@ -514,7 +514,7 @@ psql -U gin -h localhost -d gin-todo
 
 - [ ] `internal/controllers/export_controller.go` - ExportController 実装
 - [ ] `internal/controllers/export_controller.go` - ExportTasksCSV() 実装（ストリーミング）
-- [ ] ルーティング追加 - GET /api/v1/tasks/export/csv
+- [ ] ルーティング追加 - GET /api/tasks/export/csv
 
 ---
 
@@ -527,7 +527,7 @@ psql -U gin -h localhost -d gin-todo
 - [ ] `internal/websocket/handler.go` - ServeWS() ハンドラ実装
 - [ ] `internal/services/notification_service.go` - NotificationService 実装
 - [ ] TaskService に通知処理追加（Create/Update/Delete時）
-- [ ] ルーティング追加 - GET /api/v1/ws/notifications
+- [ ] ルーティング追加 - GET /api/ws/notifications
 
 ---
 
