@@ -26,6 +26,12 @@
 - JWT トークンベース認証 (Access 15分 / Refresh 7日)
 - ロールベースアクセス制御 (user/admin)
 
+#### バリデーションルール
+| 項目 | ルール |
+|------|--------|
+| メールアドレス | `xxx@xxx.xxx` 形式（@と.を含む） |
+| パスワード | 8〜24文字、英大文字(A-Z)・英小文字(a-z)・数字(0-9)・記号(.?/!-)のみ使用可 |
+
 ### タスク管理 (CRUD)
 - タスク作成・取得・更新・削除
 - ステータス管理 (todo/in_progress/done)
@@ -480,13 +486,18 @@ psql -U gin -h localhost -d gin-todo
 
 #### 11. バリデーション実装
 
-##### 11-1. リクエストバリデーション
-- [ ] `internal/validators/user_validator.go` - RegisterRequest 構造体 + バリデーションタグ
-- [ ] `internal/validators/user_validator.go` - LoginRequest 構造体 + バリデーションタグ
-- [ ] `internal/validators/task_validator.go` - CreateTaskRequest 構造体 + バリデーションタグ
-- [ ] `internal/validators/task_validator.go` - UpdateTaskRequest 構造体 + バリデーションタグ
-- [ ] `internal/validators/task_validator.go` - UpdateStatusRequest 構造体 + バリデーションタグ
+##### 11-1. リクエスト構造体（コントローラー内に定義済み）
+- [x] `internal/controllers/auth_controller.go` - RegisterRequest, LoginRequest, ChangePasswordRequest, RefreshTokenRequest
+- [x] `internal/controllers/task_controller.go` - CreateRequest, UpdateRequest, UpdateTaskStatusRequest
 
+##### 11-2. カスタムバリデーション
+- [x] `internal/validators/auth.go` - AuthValidator 実装（Functional Options パターン）
+- [x] `internal/validators/auth.go` - emailCustom バリデーション（`.+@.+\..+` 形式）
+- [x] `internal/validators/auth.go` - passwordCustom バリデーション（8〜24文字、英数字+記号`.?/!-`）
+- [x] `internal/validators/auth_test.go` - バリデーションテスト
+
+##### 11-3. 細かいバリデーション
+- [ ] bindingタグでバリデーションのチェック
 ---
 
 #### 12. 管理者機能実装
