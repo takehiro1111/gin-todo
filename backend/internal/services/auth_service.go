@@ -1,13 +1,14 @@
 package services
 
 import (
-	"github.com/go-playground/validator/v10"
-
 	"fmt"
 	"regexp"
 	"strconv"
 	"time"
 
+	"github.com/go-playground/validator/v10"
+
+	appErr "github.com/takehiro1111/gin-todo/backend/internal/errors"
 	"github.com/takehiro1111/gin-todo/backend/internal/models"
 	"github.com/takehiro1111/gin-todo/backend/internal/repositories"
 	"github.com/takehiro1111/gin-todo/backend/internal/utils"
@@ -17,7 +18,7 @@ type AuthService interface {
 	Register(name, email, password string) (string, error)
 	Login(email, password string) (string, error)
 	RefreshToken(refreshToken string) (*TokenPair, error)
-	GetMe(accessToken string) (*models.User, error)
+	GetMe(userID string) (*models.User, error)
 }
 
 type AuthServiceImpl struct {
@@ -234,7 +235,7 @@ func (s *AuthServiceImpl) GetMe(userID string) (*models.User, error) {
 	}
 
 	if user == nil {
-		return nil, fmt.Errorf("user not found")
+		return nil, appErr.ErrUserNotFound
 	}
 
 	return user, nil
