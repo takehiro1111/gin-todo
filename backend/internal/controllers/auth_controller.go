@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -9,6 +10,7 @@ import (
 	appErr "github.com/takehiro1111/gin-todo/backend/internal/errors"
 	"github.com/takehiro1111/gin-todo/backend/internal/services"
 	"github.com/takehiro1111/gin-todo/backend/internal/utils"
+	"github.com/takehiro1111/gin-todo/backend/internal/validators"
 )
 
 type AuthController interface {
@@ -64,6 +66,19 @@ func (a *AuthControllerImpl) Register(c *gin.Context) {
 		return
 	}
 
+	err := validators.NewAuthenticateValidator(
+		validators.WithEmail(req.Email),
+		validators.WithPassword(req.Password),
+	)
+	if err != nil {
+		utils.ResponseError(c, http.StatusBadRequest,
+			"failed to validation",
+			err.Error(),
+			a.timeProvider,
+		)
+		return
+	}
+
 	token, err := a.authService.Register(req.Name, req.Email, req.Password)
 
 	if err != nil {
@@ -84,6 +99,19 @@ func (a *AuthControllerImpl) Login(c *gin.Context) {
 		// loggerを実装予定
 		utils.ResponseError(c, http.StatusBadRequest,
 			"invalid request",
+			err.Error(),
+			a.timeProvider,
+		)
+		return
+	}
+
+	err := validators.NewAuthenticateValidator(
+		validators.WithEmail(req.Email),
+		validators.WithPassword(req.Password),
+	)
+	if err != nil {
+		utils.ResponseError(c, http.StatusBadRequest,
+			"failed to validation",
 			err.Error(),
 			a.timeProvider,
 		)
@@ -184,6 +212,25 @@ func (a *AuthControllerImpl) ChangePassword(c *gin.Context) {
 			a.timeProvider,
 		)
 		return
+	}
+
+	fields := map[string]string{
+		"OldPassword": req.OldPassword,
+		"NewPassword": req.NewPassword,
+	}
+
+	for k, v := range fields {
+		err := validators.NewAuthenticateValidator(
+			validators.WithPassword(v),
+		)
+		if err != nil {
+			utils.ResponseError(c, http.StatusBadRequest,
+				fmt.Sprintf("failed to validation %s", k),
+				err.Error(),
+				a.timeProvider,
+			)
+			return
+		}
 	}
 
 	if req.OldPassword == req.NewPassword {
