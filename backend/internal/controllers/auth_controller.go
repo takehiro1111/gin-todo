@@ -1,10 +1,12 @@
 package controllers
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 
+	appErr "github.com/takehiro1111/gin-todo/backend/internal/errors"
 	"github.com/takehiro1111/gin-todo/backend/internal/services"
 	"github.com/takehiro1111/gin-todo/backend/internal/utils"
 )
@@ -143,6 +145,14 @@ func (a *AuthControllerImpl) GetMe(c *gin.Context) {
 
 	user, err := a.authService.GetMe(userID.(string))
 	if err != nil {
+		if errors.Is(err, appErr.ErrUserNotFound) {
+			utils.ResponseError(c, http.StatusNotFound,
+				"user not found",
+				err.Error(),
+				a.timeProvider,
+			)
+			return
+		}
 		utils.ResponseError(c, http.StatusInternalServerError,
 			"failed get me by access token",
 			err.Error(),
