@@ -2,11 +2,8 @@ package services
 
 import (
 	"fmt"
-	"regexp"
 	"strconv"
 	"time"
-
-	"github.com/go-playground/validator/v10"
 
 	appErr "github.com/takehiro1111/gin-todo/backend/internal/errors"
 	"github.com/takehiro1111/gin-todo/backend/internal/models"
@@ -19,6 +16,7 @@ type AuthService interface {
 	Login(email, password string) (string, error)
 	RefreshToken(refreshToken string) (*TokenPair, error)
 	GetMe(userID string) (*models.User, error)
+	ChangePassword(userID, oldPassword, newPassword string) error
 }
 
 type AuthServiceImpl struct {
@@ -27,11 +25,6 @@ type AuthServiceImpl struct {
 	jwtProvider     utils.JWTProvider
 	accessTokenTTL  time.Duration
 	refreshTokenTTL time.Duration
-}
-
-type AuthenticateProvider struct {
-	Email    string `validate:"emailCustom"`
-	Password string `validate:"passwordCustom"`
 }
 
 type TokenPair struct {
@@ -55,39 +48,7 @@ func NewAuthService(userRepo repositories.UserRepository, passwordManager utils.
 		refreshTokenTTL: refreshTokenTTL,
 	}
 }
-
-func emailValidate(fl validator.FieldLevel) bool {
-	email := fl.Field().String()
-	if email == "" {
-		return false
-	}
-	if match, _ := regexp.MatchString(".+@.+\\..+", email); !match {
-		return false
-	}
-	return true
-}
-
-func passwordValidate(fl validator.FieldLevel) bool {
-	password := fl.Field().String()
-	if password == "" {
-		return false
-	}
-	if match, _ := regexp.MatchString("^[a-zA-Z0-9.?/-!]{8,24}$", password); !match {
-		return false
-	}
-	return true
-}
-
 func (s *AuthServiceImpl) Register(name, email, password string) (string, error) {
-	validate := validator.New()
-	validate.RegisterValidation("emailCustom", emailValidate)
-	validate.RegisterValidation("passwordCustom", passwordValidate)
-
-	err := validate.Struct(AuthenticateProvider{Email: email, Password: password})
-	if err != nil {
-		return "", fmt.Errorf("failed to validation: %w", err)
-	}
-
 	user, err := s.userRepo.FindByEmail(email)
 	if err != nil {
 		return "", err
@@ -133,15 +94,6 @@ func (s *AuthServiceImpl) Register(name, email, password string) (string, error)
 }
 
 func (s *AuthServiceImpl) Login(email, password string) (string, error) {
-	validate := validator.New()
-	validate.RegisterValidation("emailCustom", emailValidate)
-	validate.RegisterValidation("passwordCustom", passwordValidate)
-
-	err := validate.Struct(AuthenticateProvider{Email: email, Password: password})
-	if err != nil {
-		return "", fmt.Errorf("failed validation: %w", err)
-	}
-
 	// メールアドレス, パスワードの付け合わせ
 	user, err := s.userRepo.FindByEmail(email)
 	if err != nil {
@@ -239,4 +191,33 @@ func (s *AuthServiceImpl) GetMe(userID string) (*models.User, error) {
 	}
 
 	return user, nil
+}
+
+func (s *AuthServiceImpl) ChangePassword(userID, oldPassword, newPassword string) error {
+	toUintUserID, err := strconv.ParseUint(userID, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to cast userID  : %w", err)
+	}
+
+	user, err := s.userRepo.FindByID(uint(toUintUserID))
+	if err != nil {
+		return fmt.Errorf("failed to find user: %w", err)
+	}
+
+	err = s.passwordManager.CheckPassword(user.PasswordHash, oldPassword)
+	if err != nil {
+		return fmt.Errorf("failed to check password: %w", err)
+	}
+
+	hashedNewPassword, err := s.passwordManager.HashPassword(newPassword)
+	if err != nil {
+		return fmt.Errorf("failed to hash password: %w", err)
+	}
+
+	err = s.userRepo.UpdatePassword(uint(toUintUserID), hashedNewPassword)
+	if err != nil {
+		return fmt.Errorf("failed to update password: %w", err)
+	}
+
+	return nil
 }
