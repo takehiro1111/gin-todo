@@ -1,10 +1,12 @@
 package controllers
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 
+	appErr "github.com/takehiro1111/gin-todo/backend/internal/errors"
 	"github.com/takehiro1111/gin-todo/backend/internal/services"
 	"github.com/takehiro1111/gin-todo/backend/internal/utils"
 )
@@ -14,6 +16,7 @@ type AuthController interface {
 	Login(c *gin.Context)
 	RefreshToken(c *gin.Context)
 	Logout(c *gin.Context)
+	GetMe(c *gin.Context)
 }
 
 type AuthControllerImpl struct {
@@ -121,4 +124,36 @@ func (a *AuthControllerImpl) RefreshToken(c *gin.Context) {
 
 func (a *AuthControllerImpl) Logout(c *gin.Context) {
 	utils.ResponseSuccess(c, http.StatusOK, "logout successfully", nil, a.timeProvider)
+}
+
+func (a *AuthControllerImpl) GetMe(c *gin.Context) {
+	userID, exist := c.Get("user_id")
+	if !exist {
+		utils.ResponseError(c, http.StatusUnauthorized,
+			"invalid user access",
+			"userID not found in context",
+			a.timeProvider,
+		)
+		return
+	}
+
+	user, err := a.authService.GetMe(userID.(string))
+	if err != nil {
+		if errors.Is(err, appErr.ErrUserNotFound) {
+			utils.ResponseError(c, http.StatusNotFound,
+				"user not found",
+				err.Error(),
+				a.timeProvider,
+			)
+			return
+		}
+		utils.ResponseError(c, http.StatusInternalServerError,
+			"failed get me by access token",
+			err.Error(),
+			a.timeProvider,
+		)
+		return
+	}
+
+	utils.ResponseSuccess(c, http.StatusOK, "get me successfully", user, a.timeProvider)
 }

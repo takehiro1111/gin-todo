@@ -1,20 +1,24 @@
 package services
 
 import (
+	"fmt"
+	"regexp"
+	"strconv"
+	"time"
+
 	"github.com/go-playground/validator/v10"
 
-	"fmt"
+	appErr "github.com/takehiro1111/gin-todo/backend/internal/errors"
 	"github.com/takehiro1111/gin-todo/backend/internal/models"
 	"github.com/takehiro1111/gin-todo/backend/internal/repositories"
 	"github.com/takehiro1111/gin-todo/backend/internal/utils"
-	"regexp"
-	"time"
 )
 
 type AuthService interface {
 	Register(name, email, password string) (string, error)
 	Login(email, password string) (string, error)
 	RefreshToken(refreshToken string) (*TokenPair, error)
+	GetMe(userID string) (*models.User, error)
 }
 
 type AuthServiceImpl struct {
@@ -217,4 +221,22 @@ func (s *AuthServiceImpl) RefreshToken(refreshToken string) (*TokenPair, error) 
 
 	tokenPair := NewTokenPair(newAccessToken, newRefreshToken)
 	return tokenPair, nil
+}
+
+func (s *AuthServiceImpl) GetMe(userID string) (*models.User, error) {
+	toUintUserID, err := strconv.ParseUint(userID, 10, 64)
+	if err != nil {
+		return nil, fmt.Errorf("failed to cast userID  : %w", err)
+	}
+
+	user, err := s.userRepo.FindByID(uint(toUintUserID))
+	if err != nil {
+		return nil, fmt.Errorf("failed to find user: %w", err)
+	}
+
+	if user == nil {
+		return nil, appErr.ErrUserNotFound
+	}
+
+	return user, nil
 }
