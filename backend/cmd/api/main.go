@@ -140,7 +140,7 @@ func main() {
 	<-ctx.Done()
 
 	// シャットダウン猶予時間を設定
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), 11*time.Second)
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	err = srv.Shutdown(shutdownCtx)
