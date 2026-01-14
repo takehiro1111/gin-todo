@@ -75,7 +75,8 @@ func (r *userRepositoryImpl) FindByEmail(email string) (*models.User, error) {
 	user, err := gorm.G[models.User](r.db).Where("email = ?", email).First(ctx)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("user not found by Email")
+			// Registerで使用しているためerror時もnilで返す
+			return nil, nil
 		}
 		return nil, fmt.Errorf("failed to find user by Email: %v", err)
 	}

@@ -15,9 +15,55 @@
         "version": "1.0"
     },
     "host": "localhost:8080",
-    "basePath": "/api/v1",
+    "basePath": "/",
     "paths": {
-        "/health": {
+        "/api/auth/register": {
+            "post": {
+                "description": "認証処理のためのユーザー登録",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "register"
+                ],
+                "summary": "ユーザー登録",
+                "parameters": [
+                    {
+                        "description": "登録情報",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/controllers.RegisterRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/utils.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/health": {
             "get": {
                 "description": "APIサーバーの稼働状態を確認",
                 "produces": [
@@ -37,6 +83,62 @@
                             }
                         }
                     }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "controllers.RegisterRequest": {
+            "type": "object",
+            "required": [
+                "email",
+                "name",
+                "password"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                }
+            }
+        },
+        "utils.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "error": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "success": {
+                    "type": "boolean"
+                },
+                "timestamp": {
+                    "type": "string"
+                }
+            }
+        },
+        "utils.SuccessResponse": {
+            "type": "object",
+            "properties": {
+                "data": {},
+                "message": {
+                    "type": "string"
+                },
+                "success": {
+                    "type": "boolean"
+                },
+                "timestamp": {
+                    "type": "string"
                 }
             }
         }
