@@ -54,6 +54,17 @@ type RefreshTokenRequest struct {
 	RefreshToken string `json:"refresh_token" binding:"required"`
 }
 
+// Register godoc
+// @Summary      ユーザー登録
+// @Description  認証処理のためのユーザー登録
+// @Accept       json
+// @Produce      json
+// @Param        request body RegisterRequest true "登録情報"
+// @Tags         register
+// @Success      201 {object} utils.SuccessResponse
+// @Failure      400 {object} utils.ErrorResponse
+// @Failure      500 {object} utils.ErrorResponse
+// @Router       /api/auth/register [post]
 func (a *AuthControllerImpl) Register(c *gin.Context) {
 	var req RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
