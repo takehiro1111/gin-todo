@@ -3,8 +3,11 @@ package main
 import (
 	"context"
 	"log"
+	"net/http"
 	"os"
+	"os/signal"
 	"strconv"
+	"syscall"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -37,13 +40,17 @@ import (
 // @name Authorization
 // @description Type "Bearer" followed by a space and JWT token.
 func main() {
+	// 開発時はDefaultで良いが、本番はNewでカスタムのミドルウェアを適用する。
 	r := gin.Default()
+
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
+	defer stop()
 
 	ssmClient, err := aws.NewSSMClient()
 	if err != nil {
 		log.Fatalf("failed to generate ssmClient: %v", err)
 	}
-	ctx := context.Background()
+
 	params, err := services.GetSSMParameter(ssmClient, ctx)
 	if err != nil {
 		log.Fatalf("failed to get ssmParameters: %v", err)
@@ -117,5 +124,30 @@ func main() {
 
 	routes.SetupRoutes(r, authCtrl, taskCtrl, jwtProvider)
 
-	r.Run(":8080")
+	srv := &http.Server{
+		Addr:    ":8080",
+		Handler: r,
+	}
+
+	go func() {
+		err := srv.ListenAndServe()
+		if err != nil && err != http.ErrServerClosed {
+			log.Fatalf("listen: %s\n", err)
+		}
+	}()
+
+	// SIGINT or SIGTERM を待機して受信する
+	<-ctx.Done()
+
+	// シャットダウン猶予時間を設定
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	err = srv.Shutdown(shutdownCtx)
+	if err != nil {
+		log.Fatal("server forced to shutdown: ", err)
+	}
+
+	// gracefulshutdownが完了した場合に表示
+	log.Println("server exiting by gracefulshutdown")
 }

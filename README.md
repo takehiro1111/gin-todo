@@ -465,7 +465,7 @@ psql -U gin -h localhost -d gin-todo
 - [x] `cmd/api/main.go` - Service 初期化
 - [x] `cmd/api/main.go` - Controller 初期化
 - [x] `cmd/api/main.go` - Router 設定
-- [ ] `cmd/api/main.go` - Graceful Shutdown 実装
+- [x] `cmd/api/main.go` - Graceful Shutdown 実装
 - [x] `cmd/api/main.go` - サーバー起動
 
 ---
