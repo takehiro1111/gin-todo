@@ -1,5 +1,5 @@
-.PHONY: swagger
-swagger:
+.PHONY: swagger.init
+swagger.init:
 	swag init -g cmd/api/main.go
 
 .PHONY: run

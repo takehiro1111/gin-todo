@@ -481,7 +481,7 @@ psql -U gin -h localhost -d gin-todo
 #### 10. 動作確認（Swagger）
 
 - [x] POST /api/auth/register - ユーザー登録テスト
-- [ ] POST /api/auth/login - ログインテスト（Cookie確認）
+- [x] POST /api/auth/login - ログインテスト（Cookie確認）
 - [ ] POST /api/tasks - タスク作成テスト（要認証）
 - [ ] GET /api/tasks - タスク一覧テスト
 - [ ] GET /api/tasks/:id - タスク詳細テスト
@@ -491,6 +491,8 @@ psql -U gin -h localhost -d gin-todo
 - [ ] 権限エラーテスト（他人のタスク操作）
 
 ---
+
+- ログイン処理時にリフレッシュトークンを返すよう修正
 
 #### 11. バリデーション実装
 
@@ -629,3 +631,140 @@ docker compose exec gin-todo-postgres psql -U gin -d gin-todo
 
 ## Swaggerのエンドポイント
 http://localhost:8080/swagger/index.html
+
+
+## API エンドポイント
+
+### ヘルスチェック
+
+```bash
+curl -X GET http://localhost:8080/api/health
+```
+
+### 認証 (Auth)
+
+#### ユーザー登録
+
+```bash
+curl -X POST http://localhost:8080/api/auth/register \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "name": "test-user",
+    "email": "test@example.com",
+    "password": "Password123!"
+  }'
+```
+
+#### ログイン
+
+```bash
+curl -X POST http://localhost:8080/api/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "email": "test@example.com",
+    "password": "Password123!"
+  }'
+```
+
+#### トークンリフレッシュ
+
+```bash
+curl -X POST http://localhost:8080/api/auth/refresh \
+  -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer <ACCESS_TOKEN>' \
+  -d '{
+    "refresh_token": "<REFRESH_TOKEN>"
+  }'
+```
+
+#### ログアウト
+
+```bash
+curl -X POST http://localhost:8080/api/auth/logout \
+  -H 'Authorization: Bearer <ACCESS_TOKEN>'
+```
+
+#### ユーザー情報取得
+
+```bash
+curl -X GET http://localhost:8080/api/auth/me \
+  -H 'Authorization: Bearer <ACCESS_TOKEN>'
+```
+
+#### パスワード変更
+
+```bash
+curl -X PATCH http://localhost:8080/api/auth/password \
+  -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer <ACCESS_TOKEN>' \
+  -d '{
+    "old_password": "Password123!",
+    "new_password": "NewPassword456!"
+  }'
+```
+
+### タスク (Task)
+
+> 全てのタスクAPIは認証が必要です。`Authorization: Bearer <ACCESS_TOKEN>` ヘッダーを付与してください。
+
+#### タスク一覧取得
+
+```bash
+curl -X GET http://localhost:8080/api/task/ \
+  -H 'Authorization: Bearer <ACCESS_TOKEN>'
+```
+
+#### タスク作成
+
+```bash
+curl -X POST http://localhost:8080/api/task/ \
+  -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer <ACCESS_TOKEN>' \
+  -d '{
+    "title": "新しいタスク",
+    "description": "タスクの説明",
+    "status_id": 1,
+    "priority": "high",
+    "due_date": "2026-01-31T23:59:59+09:00"
+  }'
+```
+
+#### タスク取得（ID指定）
+
+```bash
+curl -X GET http://localhost:8080/api/task/1 \
+  -H 'Authorization: Bearer <ACCESS_TOKEN>'
+```
+
+#### タスク更新
+
+```bash
+curl -X PUT http://localhost:8080/api/task/1 \
+  -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer <ACCESS_TOKEN>' \
+  -d '{
+    "title": "更新後のタスク",
+    "description": "更新後の説明",
+    "status_id": 2,
+    "priority": "medium",
+    "due_date": "2026-02-15T23:59:59+09:00"
+  }'
+```
+
+#### タスクステータス更新
+
+```bash
+curl -X PATCH http://localhost:8080/api/task/1 \
+  -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer <ACCESS_TOKEN>' \
+  -d '{
+    "status_id": 3
+  }'
+```
+
+#### タスク削除
+
+```bash
+curl -X DELETE http://localhost:8080/api/task/1 \
+  -H 'Authorization: Bearer <ACCESS_TOKEN>'
+```
