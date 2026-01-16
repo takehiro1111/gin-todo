@@ -26,9 +26,6 @@ func NewTaskService(repo repositories.TaskRepository) TaskService {
 }
 
 func (s *TaskServiceImpl) CreateTask(ctx context.Context, task *models.Task) (*models.Task, error) {
-	// バリデーションの実装はあと工程で考える
-	// カスタムバリデーションを差し込みたい
-
 	err := s.taskRepository.Create(ctx, task)
 	if err != nil {
 		return nil, err
@@ -38,9 +35,6 @@ func (s *TaskServiceImpl) CreateTask(ctx context.Context, task *models.Task) (*m
 }
 
 func (s *TaskServiceImpl) GetTaskByID(ctx context.Context, id, userID uint) (*models.Task, error) {
-	// バリデーションの実装はあと工程で考える
-	// カスタムバリデーションを差し込みたい
-
 	task, err := s.taskRepository.FindByID(ctx, id, userID)
 	if err != nil {
 		return nil, err
@@ -50,9 +44,6 @@ func (s *TaskServiceImpl) GetTaskByID(ctx context.Context, id, userID uint) (*mo
 }
 
 func (s *TaskServiceImpl) GetTasksByUserID(ctx context.Context, userID uint) ([]models.Task, error) {
-	// バリデーションの実装はあと工程で考える
-	// カスタムバリデーションを差し込みたい
-
 	tasks, err := s.taskRepository.FindByUserID(ctx, userID)
 	if err != nil {
 		return nil, err
@@ -62,9 +53,6 @@ func (s *TaskServiceImpl) GetTasksByUserID(ctx context.Context, userID uint) ([]
 }
 
 func (s *TaskServiceImpl) GetAllTasks(ctx context.Context, userID uint) ([]models.Task, error) {
-	// バリデーションの実装はあと工程で考える
-	// カスタムバリデーションを差し込みたい
-
 	tasks, err := s.taskRepository.FindAll(ctx, userID)
 	if err != nil {
 		return nil, err
@@ -74,9 +62,6 @@ func (s *TaskServiceImpl) GetAllTasks(ctx context.Context, userID uint) ([]model
 }
 
 func (s *TaskServiceImpl) UpdateTask(ctx context.Context, task *models.Task) (*models.Task, error) {
-	// バリデーションの実装はあと工程で考える
-	// カスタムバリデーションを差し込みたい
-
 	err := s.taskRepository.Update(ctx, task)
 	if err != nil {
 		return nil, err
@@ -86,9 +71,6 @@ func (s *TaskServiceImpl) UpdateTask(ctx context.Context, task *models.Task) (*m
 }
 
 func (s *TaskServiceImpl) UpdateTaskStatus(ctx context.Context, id, userID uint, statusID int64) error {
-	// バリデーションの実装はあと工程で考える
-	// カスタムバリデーションを差し込みたい
-
 	err := s.taskRepository.UpdateStatus(ctx, id, userID, statusID)
 	if err != nil {
 		return err
@@ -98,9 +80,6 @@ func (s *TaskServiceImpl) UpdateTaskStatus(ctx context.Context, id, userID uint,
 }
 
 func (s *TaskServiceImpl) DeleteTask(ctx context.Context, id, userID uint) error {
-	// バリデーションの実装はあと工程で考える
-	// カスタムバリデーションを差し込みたい
-
 	err := s.taskRepository.Delete(ctx, id, userID)
 	if err != nil {
 		return err

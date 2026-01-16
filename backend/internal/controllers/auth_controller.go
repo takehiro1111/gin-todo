@@ -34,6 +34,7 @@ func NewAuthControllerImpl(authService services.AuthService, timeProvider *utils
 	}
 }
 
+// 認証系はカスタムバリーデーションを実装しているためrequiredのみ設定。
 type RegisterRequest struct {
 	Name     string `json:"name" binding:"required"`
 	Email    string `json:"email" binding:"required"`
@@ -140,7 +141,7 @@ func (a *AuthControllerImpl) Login(c *gin.Context) {
 		return
 	}
 
-	token, err := a.authService.Login(req.Email, req.Password)
+	accessToken, refreshToken, err := a.authService.Login(req.Email, req.Password)
 	if err != nil {
 		utils.ResponseError(c, http.StatusUnauthorized,
 			"failed login",
@@ -150,7 +151,7 @@ func (a *AuthControllerImpl) Login(c *gin.Context) {
 		return
 	}
 
-	utils.ResponseSuccess(c, http.StatusOK, "login successfully", token, a.timeProvider)
+	utils.ResponseSuccess(c, http.StatusOK, "login successfully", map[string]string{"access_token": accessToken, "refresh_token": refreshToken}, a.timeProvider)
 }
 
 // RefreshToken godoc

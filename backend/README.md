@@ -482,17 +482,14 @@ psql -U gin -h localhost -d gin-todo
 
 - [x] POST /api/auth/register - ユーザー登録テスト
 - [x] POST /api/auth/login - ログインテスト（Cookie確認）
-- [ ] POST /api/tasks - タスク作成テスト（要認証）
-- [ ] GET /api/tasks - タスク一覧テスト
-- [ ] GET /api/tasks/:id - タスク詳細テスト
-- [ ] PUT /api/tasks/:id - タスク更新テスト
-- [ ] PATCH /api/tasks/:id/status - ステータス更新テスト
-- [ ] DELETE /api/tasks/:id - タスク削除テスト
-- [ ] 権限エラーテスト（他人のタスク操作）
+- [x] POST /api/tasks - タスク作成テスト（要認証）
+- [x] GET /api/tasks - タスク一覧テスト
+- [x] GET /api/tasks/:id - タスク詳細テスト
+- [x] PUT /api/tasks/:id - タスク更新テスト
+- [x] PATCH /api/tasks/:id/status - ステータス更新テスト
+- [x] DELETE /api/tasks/:id - タスク削除テスト
 
 ---
-
-- ログイン処理時にリフレッシュトークンを返すよう修正
 
 #### 11. バリデーション実装
 
@@ -507,7 +504,7 @@ psql -U gin -h localhost -d gin-todo
 - [x] `internal/validators/auth_test.go` - バリデーションテスト
 
 ##### 11-3. 細かいバリデーション
-- [ ] bindingタグでバリデーションのチェック
+- [x] bindingタグでバリデーションのチェック
 ---
 
 #### 12. 管理者機能実装
@@ -584,7 +581,7 @@ psql -U gin -h localhost -d gin-todo
 ---
 
 #### 16. エラーハンドリング強化
-
+- [ ] 403ハンドラ設定、改善（他ユーザーの権限エラー時など）
 - [ ] 404ハンドラ設定
 - [ ] 405ハンドラ設定
 - [ ] 統一エラーレスポンス形式確認
