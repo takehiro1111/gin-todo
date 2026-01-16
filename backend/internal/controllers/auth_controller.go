@@ -54,6 +54,17 @@ type RefreshTokenRequest struct {
 	RefreshToken string `json:"refresh_token" binding:"required"`
 }
 
+// Register godoc
+// @Summary      ユーザー登録
+// @Description  新規ユーザーを登録する
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        request body RegisterRequest true "登録情報"
+// @Success      201 {object} utils.SuccessResponse
+// @Failure      400 {object} utils.ErrorResponse
+// @Failure      500 {object} utils.ErrorResponse
+// @Router       /api/auth/register [post]
 func (a *AuthControllerImpl) Register(c *gin.Context) {
 	var req RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -93,6 +104,17 @@ func (a *AuthControllerImpl) Register(c *gin.Context) {
 	utils.ResponseSuccess(c, http.StatusCreated, "registered successfully", token, a.timeProvider)
 }
 
+// Login godoc
+// @Summary      ログイン
+// @Description  メールアドレスとパスワードでログインする
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        request body LoginRequest true "ログイン情報"
+// @Success      200 {object} utils.SuccessResponse
+// @Failure      400 {object} utils.ErrorResponse
+// @Failure      401 {object} utils.ErrorResponse
+// @Router       /api/auth/login [post]
 func (a *AuthControllerImpl) Login(c *gin.Context) {
 	var req LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -120,7 +142,7 @@ func (a *AuthControllerImpl) Login(c *gin.Context) {
 
 	token, err := a.authService.Login(req.Email, req.Password)
 	if err != nil {
-		utils.ResponseError(c, http.StatusInternalServerError,
+		utils.ResponseError(c, http.StatusUnauthorized,
 			"failed login",
 			err.Error(),
 			a.timeProvider,
@@ -131,6 +153,18 @@ func (a *AuthControllerImpl) Login(c *gin.Context) {
 	utils.ResponseSuccess(c, http.StatusOK, "login successfully", token, a.timeProvider)
 }
 
+// RefreshToken godoc
+// @Summary      トークンリフレッシュ
+// @Description  リフレッシュトークンを使用して新しいアクセストークンを取得する
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        request body RefreshTokenRequest true "リフレッシュトークン"
+// @Success      200 {object} utils.SuccessResponse
+// @Failure      400 {object} utils.ErrorResponse
+// @Failure      500 {object} utils.ErrorResponse
+// @Security     BearerAuth
+// @Router       /api/auth/refresh [post]
 func (a *AuthControllerImpl) RefreshToken(c *gin.Context) {
 	var req RefreshTokenRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -156,10 +190,31 @@ func (a *AuthControllerImpl) RefreshToken(c *gin.Context) {
 	utils.ResponseSuccess(c, http.StatusOK, "generate refresh token successfully", token, a.timeProvider)
 }
 
+// Logout godoc
+// @Summary      ログアウト
+// @Description  ログアウトする
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Success      200 {object} utils.SuccessResponse
+// @Security     BearerAuth
+// @Router       /api/auth/logout [post]
 func (a *AuthControllerImpl) Logout(c *gin.Context) {
 	utils.ResponseSuccess(c, http.StatusOK, "logout successfully", nil, a.timeProvider)
 }
 
+// GetMe godoc
+// @Summary      ユーザー情報取得
+// @Description  ログイン中のユーザー情報を取得する
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Success      200 {object} utils.SuccessResponse
+// @Failure      401 {object} utils.ErrorResponse
+// @Failure      404 {object} utils.ErrorResponse
+// @Failure      500 {object} utils.ErrorResponse
+// @Security     BearerAuth
+// @Router       /api/auth/me [get]
 func (a *AuthControllerImpl) GetMe(c *gin.Context) {
 	userID, exist := c.Get("user_id")
 	if !exist {
@@ -192,6 +247,19 @@ func (a *AuthControllerImpl) GetMe(c *gin.Context) {
 	utils.ResponseSuccess(c, http.StatusOK, "get me successfully", user, a.timeProvider)
 }
 
+// ChangePassword godoc
+// @Summary      パスワード変更
+// @Description  ログイン中のユーザーのパスワードを変更する
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        request body ChangePasswordRequest true "パスワード変更情報"
+// @Success      200 {object} utils.SuccessResponse
+// @Failure      400 {object} utils.ErrorResponse
+// @Failure      401 {object} utils.ErrorResponse
+// @Failure      500 {object} utils.ErrorResponse
+// @Security     BearerAuth
+// @Router       /api/auth/password [patch]
 func (a *AuthControllerImpl) ChangePassword(c *gin.Context) {
 	userID, exist := c.Get("user_id")
 	if !exist {

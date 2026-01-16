@@ -53,6 +53,17 @@ func NewTaskController(taskService services.TaskService, timeProvider *utils.Rea
 	}
 }
 
+// GetTasks godoc
+// @Summary      タスク一覧取得
+// @Description  ログイン中のユーザーのタスク一覧を取得する
+// @Tags         task
+// @Accept       json
+// @Produce      json
+// @Success      200 {object} utils.SuccessResponse
+// @Failure      401 {object} utils.ErrorResponse
+// @Failure      500 {object} utils.ErrorResponse
+// @Security     BearerAuth
+// @Router       /api/task/ [get]
 func (t *TaskControllerImpl) GetTasks(c *gin.Context) {
 	userID, exist := c.Get("user_id")
 	if !exist {
@@ -77,6 +88,19 @@ func (t *TaskControllerImpl) GetTasks(c *gin.Context) {
 	utils.ResponseSuccess(c, http.StatusOK, "success get all tasks", tasks, t.timeProvider)
 }
 
+// CreateTask godoc
+// @Summary      タスク作成
+// @Description  新しいタスクを作成する
+// @Tags         task
+// @Accept       json
+// @Produce      json
+// @Param        request body CreateRequest true "タスク作成情報"
+// @Success      201 {object} utils.SuccessResponse
+// @Failure      400 {object} utils.ErrorResponse
+// @Failure      401 {object} utils.ErrorResponse
+// @Failure      500 {object} utils.ErrorResponse
+// @Security     BearerAuth
+// @Router       /api/task/ [post]
 func (t *TaskControllerImpl) CreateTask(c *gin.Context) {
 	var req CreateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -122,6 +146,19 @@ func (t *TaskControllerImpl) CreateTask(c *gin.Context) {
 	utils.ResponseSuccess(c, http.StatusCreated, "success create task", data, t.timeProvider)
 }
 
+// GetTaskByID godoc
+// @Summary      タスク取得
+// @Description  指定されたIDのタスクを取得する
+// @Tags         task
+// @Accept       json
+// @Produce      json
+// @Param        id path int true "タスクID"
+// @Success      200 {object} utils.SuccessResponse
+// @Failure      400 {object} utils.ErrorResponse
+// @Failure      401 {object} utils.ErrorResponse
+// @Failure      500 {object} utils.ErrorResponse
+// @Security     BearerAuth
+// @Router       /api/task/{id} [get]
 func (t *TaskControllerImpl) GetTaskByID(c *gin.Context) {
 	idStr := c.Param("id")
 	idUint64, err := strconv.ParseUint(idStr, 10, 64)
@@ -157,6 +194,20 @@ func (t *TaskControllerImpl) GetTaskByID(c *gin.Context) {
 	utils.ResponseSuccess(c, http.StatusOK, "success get task by id", data, t.timeProvider)
 }
 
+// UpdateTask godoc
+// @Summary      タスク更新
+// @Description  指定されたIDのタスクを更新する
+// @Tags         task
+// @Accept       json
+// @Produce      json
+// @Param        id path int true "タスクID"
+// @Param        request body UpdateRequest true "タスク更新情報"
+// @Success      200 {object} utils.SuccessResponse
+// @Failure      400 {object} utils.ErrorResponse
+// @Failure      401 {object} utils.ErrorResponse
+// @Failure      500 {object} utils.ErrorResponse
+// @Security     BearerAuth
+// @Router       /api/task/{id} [put]
 func (t *TaskControllerImpl) UpdateTask(c *gin.Context) {
 	idStr := c.Param("id")
 	idUint64, err := strconv.ParseUint(idStr, 10, 64)
@@ -213,6 +264,20 @@ func (t *TaskControllerImpl) UpdateTask(c *gin.Context) {
 	utils.ResponseSuccess(c, http.StatusOK, "success update task", data, t.timeProvider)
 }
 
+// UpdateTaskStatus godoc
+// @Summary      タスクステータス更新
+// @Description  指定されたIDのタスクのステータスを更新する
+// @Tags         task
+// @Accept       json
+// @Produce      json
+// @Param        id path int true "タスクID"
+// @Param        request body UpdateTaskStatusRequest true "ステータス更新情報"
+// @Success      200 {object} utils.SuccessResponse
+// @Failure      400 {object} utils.ErrorResponse
+// @Failure      401 {object} utils.ErrorResponse
+// @Failure      500 {object} utils.ErrorResponse
+// @Security     BearerAuth
+// @Router       /api/task/{id} [patch]
 func (t *TaskControllerImpl) UpdateTaskStatus(c *gin.Context) {
 	idStr := c.Param("id")
 	idUint64, err := strconv.ParseUint(idStr, 10, 64)
@@ -259,6 +324,19 @@ func (t *TaskControllerImpl) UpdateTaskStatus(c *gin.Context) {
 	utils.ResponseSuccess(c, http.StatusOK, "success update task status id", nil, t.timeProvider)
 }
 
+// DeleteTask godoc
+// @Summary      タスク削除
+// @Description  指定されたIDのタスクを削除する
+// @Tags         task
+// @Accept       json
+// @Produce      json
+// @Param        id path int true "タスクID"
+// @Success      200 {object} utils.SuccessResponse
+// @Failure      400 {object} utils.ErrorResponse
+// @Failure      401 {object} utils.ErrorResponse
+// @Failure      500 {object} utils.ErrorResponse
+// @Security     BearerAuth
+// @Router       /api/task/{id} [delete]
 func (t *TaskControllerImpl) DeleteTask(c *gin.Context) {
 	idStr := c.Param("id")
 	idUint64, err := strconv.ParseUint(idStr, 10, 64)

@@ -58,7 +58,7 @@ func SetupRoutes(r *gin.Engine, authCtrl controllers.AuthController, taskCtrl co
 // @Tags         health
 // @Produce      json
 // @Success      200 {object} map[string]string
-// @Router       /health [get]
+// @Router       /api/health [get]
 func HealthCheck(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status": "ok",

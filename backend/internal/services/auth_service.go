@@ -67,7 +67,7 @@ func (s *AuthServiceImpl) Register(name, email, password string) (string, error)
 		Name:         name,
 		Email:        email,
 		PasswordHash: hashedPassword,
-		RoleName:     models.RoleUser,
+		RoleID:       1,
 	}
 
 	err = s.userRepo.Create(&newUser)
@@ -80,7 +80,7 @@ func (s *AuthServiceImpl) Register(name, email, password string) (string, error)
 
 	token, err := s.jwtProvider.GenerateAccessToken(
 		newUser.Name,
-		models.RoleUser,
+		models.RoleWriter,
 		newUser.ID,
 		exp, // 有効期限
 		now, // 発行時刻
@@ -115,7 +115,7 @@ func (s *AuthServiceImpl) Login(email, password string) (string, error) {
 
 	token, err := s.jwtProvider.GenerateAccessToken(
 		user.Name,
-		user.RoleName,
+		models.RoleWriter,
 		user.ID,
 		exp, // 有効期限
 		now, // 発行時刻
@@ -149,7 +149,7 @@ func (s *AuthServiceImpl) RefreshToken(refreshToken string) (*TokenPair, error) 
 
 	newAccessToken, err := s.jwtProvider.GenerateAccessToken(
 		user.Name,
-		user.RoleName,
+		models.RoleWriter,
 		user.ID,
 		accessTokenExp,
 		now,
@@ -161,7 +161,7 @@ func (s *AuthServiceImpl) RefreshToken(refreshToken string) (*TokenPair, error) 
 
 	newRefreshToken, err := s.jwtProvider.GenerateRefreshToken(
 		user.Name,
-		user.RoleName,
+		models.RoleWriter,
 		user.ID,
 		refreshTokenExp,
 		now,
