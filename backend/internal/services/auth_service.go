@@ -13,7 +13,7 @@ import (
 
 type AuthService interface {
 	Register(name, email, password string) (string, error)
-	Login(email, password string) (string, error)
+	Login(email, password string) (string, string, error)
 	RefreshToken(refreshToken string) (*TokenPair, error)
 	GetMe(userID string) (*models.User, error)
 	ChangePassword(userID, oldPassword, newPassword string) error
@@ -76,15 +76,15 @@ func (s *AuthServiceImpl) Register(name, email, password string) (string, error)
 	}
 
 	now := time.Now()
-	exp := now.Add(s.accessTokenTTL)
+	accessTokenExp := now.Add(s.accessTokenTTL)
 
 	token, err := s.jwtProvider.GenerateAccessToken(
 		newUser.Name,
 		models.RoleWriter,
 		newUser.ID,
-		exp, // 有効期限
-		now, // 発行時刻
-		now, // 有効開始時刻
+		accessTokenExp, // 有効期限
+		now,            // 発行時刻
+		now,            // 有効開始時刻
 	)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate token: %w", err)
@@ -93,39 +93,52 @@ func (s *AuthServiceImpl) Register(name, email, password string) (string, error)
 	return token, nil
 }
 
-func (s *AuthServiceImpl) Login(email, password string) (string, error) {
+func (s *AuthServiceImpl) Login(email, password string) (string, string, error) {
 	// メールアドレス, パスワードの付け合わせ
 	user, err := s.userRepo.FindByEmail(email)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	if user == nil {
-		return "", fmt.Errorf("invalid credentials")
+		return "", "", fmt.Errorf("invalid credentials")
 	}
 
 	err = s.passwordManager.CheckPassword(user.PasswordHash, password)
 	if err != nil {
-		return "", fmt.Errorf("failed to check password: %w", err)
+		return "", "", fmt.Errorf("failed to check password: %w", err)
 	}
 
 	// JWT生成
 	now := time.Now()
-	exp := now.Add(s.accessTokenTTL)
+	accessTokenExp := now.Add(s.accessTokenTTL)
+	refreshTokenExp := now.Add(s.refreshTokenTTL)
 
-	token, err := s.jwtProvider.GenerateAccessToken(
+	accessToken, err := s.jwtProvider.GenerateAccessToken(
 		user.Name,
 		models.RoleWriter,
 		user.ID,
-		exp, // 有効期限
-		now, // 発行時刻
-		now, // 有効開始時刻
+		accessTokenExp, // 有効期限
+		now,            // 発行時刻
+		now,            // 有効開始時刻
 	)
 	if err != nil {
-		return "", fmt.Errorf("failed to generate token: %w", err)
+		return "", "", fmt.Errorf("failed to generate token: %w", err)
 	}
 
-	return token, nil
+	refreshToken, err := s.jwtProvider.GenerateRefreshToken(
+		user.Name,
+		models.RoleWriter,
+		user.ID,
+		refreshTokenExp,
+		now,
+		now,
+	)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to generate token: %w", err)
+	}
+
+	return accessToken, refreshToken, nil
 }
 
 func (s *AuthServiceImpl) RefreshToken(refreshToken string) (*TokenPair, error) {

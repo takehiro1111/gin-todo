@@ -27,16 +27,16 @@ type TaskControllerImpl struct {
 }
 
 type CreateRequest struct {
-	Title       string     `json:"title" binding:"required"`
-	Description string     `json:"description"`
+	Title       string     `json:"title" binding:"required,max=100"`
+	Description string     `json:"description" binding:"max=300"`
 	StatusID    int64      `json:"status_id"`
 	Priority    string     `json:"priority"`
 	DueDate     *time.Time `json:"due_date"`
 }
 
 type UpdateRequest struct {
-	Title       string     `json:"title"  binding:"required"`
-	Description string     `json:"description"`
+	Title       string     `json:"title"  binding:"required,max=100"`
+	Description string     `json:"description" binding:"max=100"`
 	StatusID    int64      `json:"status_id"`
 	Priority    string     `json:"priority"`
 	DueDate     *time.Time `json:"due_date"`
