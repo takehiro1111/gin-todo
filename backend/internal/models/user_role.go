@@ -1,9 +1,22 @@
 package models
 
 const (
-	RoleAdmin  = "admin"
-	RoleWriter = "writer"
+	RoleAdmin         = "admin"
+	RoleWriter        = "writer"
+	RoleIDAdmin  uint = 1
+	RoleIDWriter uint = 2
 )
+
+func GetRoleNameByID(roleID uint) string {
+	switch roleID {
+	case RoleIDAdmin:
+		return RoleAdmin
+	case RoleIDWriter:
+		return RoleWriter
+	default:
+		return RoleWriter
+	}
+}
 
 type UserRole struct {
 	BaseModel

@@ -13,6 +13,7 @@ definitions:
   controllers.CreateRequest:
     properties:
       description:
+        maxLength: 300
         type: string
       due_date:
         type: string
@@ -21,6 +22,7 @@ definitions:
       status_id:
         type: integer
       title:
+        maxLength: 100
         type: string
     required:
     - title
@@ -58,6 +60,7 @@ definitions:
   controllers.UpdateRequest:
     properties:
       description:
+        maxLength: 100
         type: string
       due_date:
         type: string
@@ -66,6 +69,7 @@ definitions:
       status_id:
         type: integer
       title:
+        maxLength: 100
         type: string
     required:
     - title
@@ -113,6 +117,64 @@ info:
   title: Gin Todo API
   version: "1.0"
 paths:
+  /api/admin/tasks:
+    get:
+      consumes:
+      - application/json
+      description: 管理者権限で全ユーザーのタスク一覧を取得する
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.SuccessResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 全タスク一覧取得
+      tags:
+      - admin
+  /api/admin/users:
+    get:
+      consumes:
+      - application/json
+      description: 管理者権限で全ユーザーの一覧を取得する
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.SuccessResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 全ユーザー一覧取得
+      tags:
+      - admin
   /api/auth/login:
     post:
       consumes:
@@ -136,8 +198,8 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/utils.ErrorResponse'
-        "500":
-          description: Internal Server Error
+        "401":
+          description: Unauthorized
           schema:
             $ref: '#/definitions/utils.ErrorResponse'
       summary: ログイン

@@ -341,6 +341,15 @@ npm run format
 ## Reference
 https://gin-gonic.com/ja/docs/
 
+curl -X POST http://localhost:8080/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin2@example.com","password":"password123"}'
+
+curl -X GET http://localhost:8080/api/admin/users \
+  -H "Authorization: Bearer <admin_access_token>"
+
+curl -X GET http://localhost:8080/api/admin/tasks \
+  -H "Authorization: Bearer <admin_access_token>"
 
 ## DBへの接続
 ```zsh

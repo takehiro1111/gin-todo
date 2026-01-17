@@ -12,13 +12,20 @@ import (
 )
 
 // main関数をシンプルにするため。
-func SetupRoutes(r *gin.Engine, authCtrl controllers.AuthController, taskCtrl controllers.TaskController, jwtProvider utils.JWTProvider) {
+func SetupRoutes(r *gin.Engine, adminCtrl controllers.AdminController, authCtrl controllers.AuthController, taskCtrl controllers.TaskController, jwtProvider utils.JWTProvider) {
 	// Swagger UI
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	api := r.Group("/api")
 	{
 		api.GET("/health", HealthCheck)
+	}
+
+	admin := r.Group("/api/admin")
+	admin.Use(middleware.VerifyRoleAdmin(jwtProvider))
+	{
+		admin.GET("/users", adminCtrl.GetAllUsers)
+		admin.GET("/tasks", adminCtrl.GetAllTasks)
 	}
 
 	// 認証不要（ログイン前）
