@@ -518,11 +518,11 @@ psql -U gin -h localhost -d gin-todo
 
 #### 12. 管理者機能実装
 
-- [ ] `internal/services/admin_service.go` - AdminService 実装
-- [ ] `internal/controllers/admin_controller.go` - GetAllUsers() 実装
-- [ ] `internal/controllers/admin_controller.go` - GetAllTasks() 実装
-- [ ]  `internal/routes/routes.go` - ルーティング追加 - GET /api/admin/users
-- [ ]  `internal/routes/routes.go` - ルーティング追加 - GET /api/admin/tasks
+- [x] `internal/services/admin_service.go` - AdminService 実装
+- [x] `internal/controllers/admin_controller.go` - GetAllUsers() 実装
+- [x] `internal/controllers/admin_controller.go` - GetAllTasks() 実装
+- [x]  `internal/routes/routes.go` - ルーティング追加 - GET /api/admin/users
+- [x]  `internal/routes/routes.go` - ルーティング追加 - GET /api/admin/tasks
 
 ---
 
