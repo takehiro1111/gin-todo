@@ -14,4 +14,5 @@ CREATE INDEX idx_user_roles_display_order ON user_roles(display_order);
 -- 初期データ
 INSERT INTO user_roles (name, display_order) VALUES
   ('admin', 1),
-  ('writer', 2);
+  ('writer', 2)
+ON CONFLICT DO NOTHING;

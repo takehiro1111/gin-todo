@@ -33,8 +33,8 @@ func SetupRoutes(r *gin.Engine, adminCtrl controllers.AdminController, authCtrl 
 	{
 		authPublic.POST("/register", authCtrl.Register)
 		authPublic.POST("/login", authCtrl.Login)
+		authPublic.POST("/forgot", authCtrl.ForgotPassword)
 	}
-
 	// 認証必須（ログイン後）
 	authProtected := r.Group("/api/auth")
 	authProtected.Use(middleware.VerifyUser(jwtProvider))

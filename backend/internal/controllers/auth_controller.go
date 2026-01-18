@@ -20,6 +20,7 @@ type AuthController interface {
 	Logout(c *gin.Context)
 	GetMe(c *gin.Context)
 	ChangePassword(c *gin.Context)
+	ForgotPassword(c *gin.Context)
 }
 
 type AuthControllerImpl struct {
@@ -53,6 +54,10 @@ type ChangePasswordRequest struct {
 
 type RefreshTokenRequest struct {
 	RefreshToken string `json:"refresh_token" binding:"required"`
+}
+
+type ForgotPasswordRequest struct {
+	Email string `json:"email" binding:"required"`
 }
 
 // Register godoc
@@ -322,4 +327,51 @@ func (a *AuthControllerImpl) ChangePassword(c *gin.Context) {
 	}
 
 	utils.ResponseSuccess(c, http.StatusOK, "change password successfully", nil, a.timeProvider)
+}
+
+// ForgotPassword godoc
+// @Summary      パスワードリセットのトークン生成
+// @Description  パスワードリセットに使用するトークンの生成
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Success      201 {object} utils.SuccessResponse
+// @Failure      404 {object} utils.ErrorResponse
+// @Failure      500 {object} utils.ErrorResponse
+// @Router       /api/auth/forgot [post]
+func (a *AuthControllerImpl) ForgotPassword(c *gin.Context) {
+	var req ForgotPasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		// loggerを実装予定
+		utils.ResponseError(c, http.StatusBadRequest,
+			"invalid request",
+			err.Error(),
+			a.timeProvider,
+		)
+		return
+	}
+
+	err := validators.NewAuthenticateValidator(
+		validators.WithEmail(req.Email),
+	)
+	if err != nil {
+		utils.ResponseError(c, http.StatusBadRequest,
+			"failed to validation",
+			err.Error(),
+			a.timeProvider,
+		)
+		return
+	}
+
+	resetToken, err := a.authService.ForgotPassword(c, req.Email)
+	if err != nil {
+		utils.ResponseError(c, http.StatusInternalServerError,
+			"failed generate password reset token",
+			err.Error(),
+			a.timeProvider,
+		)
+		return
+	}
+
+	utils.ResponseSuccess(c, http.StatusCreated, "generate password reset token successfully", resetToken, a.timeProvider)
 }

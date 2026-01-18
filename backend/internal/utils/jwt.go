@@ -8,7 +8,7 @@ import (
 )
 
 type JWTProvider interface {
-	GenerateAccessToken(userName, role string, userID uint, expirationTime, issuedAt, notBefore time.Time) (string, error)
+	GenerateAccessToken(userName, role string, userID uint, ext, iat, notBefore time.Time) (string, error)
 	GenerateRefreshToken(userName, role string, userID uint, ext, iat, notBefore time.Time) (string, error)
 	VerifyJWT(tokenString string) (*JWTClaims, error)
 }

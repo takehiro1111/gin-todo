@@ -175,6 +175,29 @@ paths:
       summary: 全ユーザー一覧取得
       tags:
       - admin
+  /api/auth/forgot:
+    post:
+      consumes:
+      - application/json
+      description: パスワードリセットに使用するトークンの生成
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/utils.SuccessResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      summary: パスワードリセットのトークン生成
+      tags:
+      - auth
   /api/auth/login:
     post:
       consumes:
