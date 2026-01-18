@@ -341,6 +341,15 @@ npm run format
 ## Reference
 https://gin-gonic.com/ja/docs/
 
+curl -X POST http://localhost:8080/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin2@example.com","password":"password123"}'
+
+curl -X GET http://localhost:8080/api/admin/users \
+  -H "Authorization: Bearer <admin_access_token>"
+
+curl -X GET http://localhost:8080/api/admin/tasks \
+  -H "Authorization: Bearer <admin_access_token>"
 
 ## DBへの接続
 ```zsh
@@ -509,11 +518,11 @@ psql -U gin -h localhost -d gin-todo
 
 #### 12. 管理者機能実装
 
-- [ ] `internal/services/admin_service.go` - AdminService 実装
-- [ ] `internal/controllers/admin_controller.go` - GetAllUsers() 実装
-- [ ] `internal/controllers/admin_controller.go` - GetAllTasks() 実装
-- [ ]  `internal/routes/routes.go` - ルーティング追加 - GET /api/admin/users
-- [ ]  `internal/routes/routes.go` - ルーティング追加 - GET /api/admin/tasks
+- [x] `internal/services/admin_service.go` - AdminService 実装
+- [x] `internal/controllers/admin_controller.go` - GetAllUsers() 実装
+- [x] `internal/controllers/admin_controller.go` - GetAllTasks() 実装
+- [x]  `internal/routes/routes.go` - ルーティング追加 - GET /api/admin/users
+- [x]  `internal/routes/routes.go` - ルーティング追加 - GET /api/admin/tasks
 
 ---
 

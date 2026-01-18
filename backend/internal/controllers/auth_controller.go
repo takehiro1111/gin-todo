@@ -91,7 +91,7 @@ func (a *AuthControllerImpl) Register(c *gin.Context) {
 		return
 	}
 
-	token, err := a.authService.Register(req.Name, req.Email, req.Password)
+	token, err := a.authService.Register(c, req.Name, req.Email, req.Password)
 
 	if err != nil {
 		utils.ResponseError(c, http.StatusInternalServerError,
@@ -141,7 +141,7 @@ func (a *AuthControllerImpl) Login(c *gin.Context) {
 		return
 	}
 
-	accessToken, refreshToken, err := a.authService.Login(req.Email, req.Password)
+	accessToken, refreshToken, err := a.authService.Login(c, req.Email, req.Password)
 	if err != nil {
 		utils.ResponseError(c, http.StatusUnauthorized,
 			"failed login",
@@ -178,7 +178,7 @@ func (a *AuthControllerImpl) RefreshToken(c *gin.Context) {
 		return
 	}
 
-	token, err := a.authService.RefreshToken(req.RefreshToken)
+	token, err := a.authService.RefreshToken(c, req.RefreshToken)
 	if err != nil {
 		utils.ResponseError(c, http.StatusInternalServerError,
 			"failed generate refresh token",
@@ -227,7 +227,7 @@ func (a *AuthControllerImpl) GetMe(c *gin.Context) {
 		return
 	}
 
-	user, err := a.authService.GetMe(userID.(string))
+	user, err := a.authService.GetMe(c, userID.(string))
 	if err != nil {
 		if errors.Is(err, appErr.ErrUserNotFound) {
 			utils.ResponseError(c, http.StatusNotFound,
@@ -311,7 +311,7 @@ func (a *AuthControllerImpl) ChangePassword(c *gin.Context) {
 		return
 	}
 
-	err := a.authService.ChangePassword(userID.(string), req.OldPassword, req.NewPassword)
+	err := a.authService.ChangePassword(c, userID.(string), req.OldPassword, req.NewPassword)
 	if err != nil {
 		utils.ResponseError(c, http.StatusInternalServerError,
 			"failed change password",

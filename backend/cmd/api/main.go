@@ -116,13 +116,15 @@ func main() {
 	jwtProvider := utils.NewDefaultJWTProvider(items[services.JwtSecretKey], issuer)
 	timeProvider := utils.NewRealTimeProvider()
 	passwordManager := utils.NewBcryptHasher()
+	adminService := services.NewAdminService(userRepo)
 	authService := services.NewAuthService(userRepo, passwordManager, jwtProvider, accessTokenTTL, refreshTokenTTL)
 	taskService := services.NewTaskService(taskRepo)
 
+	adminCtrl := controllers.NewAdminControllerImpl(adminService, timeProvider)
 	authCtrl := controllers.NewAuthControllerImpl(authService, timeProvider)
 	taskCtrl := controllers.NewTaskController(taskService, timeProvider)
 
-	routes.SetupRoutes(r, authCtrl, taskCtrl, jwtProvider)
+	routes.SetupRoutes(r, adminCtrl, authCtrl, taskCtrl, jwtProvider)
 
 	srv := &http.Server{
 		Addr:    ":8080",

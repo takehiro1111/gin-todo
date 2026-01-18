@@ -10,14 +10,15 @@ import (
 )
 
 type UserRepository interface {
-	Create(user *models.User) error
-	FindByID(id uint) (*models.User, error)
-	FindByName(name string) (*models.User, error)
-	FindByEmail(email string) (*models.User, error)
-	FindAll() ([]models.User, error)
-	Update(user *models.User) error
-	UpdatePassword(id uint, newHashedPassword string) error
-	Delete(id uint) error
+	Create(ctx context.Context, user *models.User) error
+	FindByID(ctx context.Context, id uint) (*models.User, error)
+	FindByName(nctx context.Context, ame string) (*models.User, error)
+	FindByEmail(ctx context.Context, email string) (*models.User, error)
+	FindAll(ctx context.Context) ([]models.User, error)
+	FindAllWithTasks(ctx context.Context) ([]models.User, error)
+	Update(ctx context.Context, user *models.User) error
+	UpdatePassword(ctx context.Context, id uint, newHashedPassword string) error
+	Delete(ctx context.Context, id uint) error
 }
 
 type userRepositoryImpl struct {
@@ -30,9 +31,7 @@ func NewUserRepository(db *gorm.DB) UserRepository {
 	return &userRepositoryImpl{db: db}
 }
 
-func (r *userRepositoryImpl) Create(user *models.User) error {
-	ctx := context.Background()
-
+func (r *userRepositoryImpl) Create(ctx context.Context, user *models.User) error {
 	err := gorm.G[models.User](r.db).Create(ctx, user)
 	if err != nil {
 		return fmt.Errorf("failed to create user: %v", err)
@@ -41,9 +40,7 @@ func (r *userRepositoryImpl) Create(user *models.User) error {
 	return nil
 }
 
-func (r *userRepositoryImpl) FindByID(id uint) (*models.User, error) {
-	ctx := context.Background()
-
+func (r *userRepositoryImpl) FindByID(ctx context.Context, id uint) (*models.User, error) {
 	user, err := gorm.G[models.User](r.db).Where("id = ?", id).First(ctx)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -55,9 +52,7 @@ func (r *userRepositoryImpl) FindByID(id uint) (*models.User, error) {
 	return &user, nil
 }
 
-func (r *userRepositoryImpl) FindByName(name string) (*models.User, error) {
-	ctx := context.Background()
-
+func (r *userRepositoryImpl) FindByName(ctx context.Context, name string) (*models.User, error) {
 	user, err := gorm.G[models.User](r.db).Where("name = ?", name).First(ctx)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -69,9 +64,7 @@ func (r *userRepositoryImpl) FindByName(name string) (*models.User, error) {
 	return &user, nil
 }
 
-func (r *userRepositoryImpl) FindByEmail(email string) (*models.User, error) {
-	ctx := context.Background()
-
+func (r *userRepositoryImpl) FindByEmail(ctx context.Context, email string) (*models.User, error) {
 	user, err := gorm.G[models.User](r.db).Where("email = ?", email).First(ctx)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -84,9 +77,7 @@ func (r *userRepositoryImpl) FindByEmail(email string) (*models.User, error) {
 	return &user, nil
 }
 
-func (r *userRepositoryImpl) FindAll() ([]models.User, error) {
-	ctx := context.Background()
-
+func (r *userRepositoryImpl) FindAll(ctx context.Context) ([]models.User, error) {
 	users, err := gorm.G[models.User](r.db).Find(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find users: %v", err)
@@ -95,9 +86,16 @@ func (r *userRepositoryImpl) FindAll() ([]models.User, error) {
 	return users, nil
 }
 
-func (r *userRepositoryImpl) Update(user *models.User) error {
-	ctx := context.Background()
+func (r *userRepositoryImpl) FindAllWithTasks(ctx context.Context) ([]models.User, error) {
+	users, err := gorm.G[models.User](r.db).Preload("Tasks", nil).Find(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find users: %v", err)
+	}
 
+	return users, nil
+}
+
+func (r *userRepositoryImpl) Update(ctx context.Context, user *models.User) error {
 	_, err := gorm.G[models.User](r.db).Where("id = ?", user.ID).Updates(ctx, *user)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -109,9 +107,7 @@ func (r *userRepositoryImpl) Update(user *models.User) error {
 	return nil
 }
 
-func (r *userRepositoryImpl) UpdatePassword(id uint, hashedNewPassword string) error {
-	ctx := context.Background()
-
+func (r *userRepositoryImpl) UpdatePassword(ctx context.Context, id uint, hashedNewPassword string) error {
 	_, err := gorm.G[models.User](r.db).Where("id = ?", id).Update(ctx, "PasswordHash", hashedNewPassword)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -123,9 +119,7 @@ func (r *userRepositoryImpl) UpdatePassword(id uint, hashedNewPassword string) e
 	return nil
 }
 
-func (r *userRepositoryImpl) Delete(id uint) error {
-	ctx := context.Background()
-
+func (r *userRepositoryImpl) Delete(ctx context.Context, id uint) error {
 	_, err := gorm.G[models.User](r.db).Where("id = ?", id).Delete(ctx)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {

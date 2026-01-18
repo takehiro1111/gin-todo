@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"time"
@@ -12,11 +13,11 @@ import (
 )
 
 type AuthService interface {
-	Register(name, email, password string) (string, error)
-	Login(email, password string) (string, string, error)
-	RefreshToken(refreshToken string) (*TokenPair, error)
-	GetMe(userID string) (*models.User, error)
-	ChangePassword(userID, oldPassword, newPassword string) error
+	Register(ctx context.Context, name, email, password string) (string, error)
+	Login(ctx context.Context, email, password string) (string, string, error)
+	RefreshToken(ctx context.Context, refreshToken string) (*TokenPair, error)
+	GetMe(ctx context.Context, userID string) (*models.User, error)
+	ChangePassword(ctx context.Context, userID, oldPassword, newPassword string) error
 }
 
 type AuthServiceImpl struct {
@@ -48,8 +49,8 @@ func NewAuthService(userRepo repositories.UserRepository, passwordManager utils.
 		refreshTokenTTL: refreshTokenTTL,
 	}
 }
-func (s *AuthServiceImpl) Register(name, email, password string) (string, error) {
-	user, err := s.userRepo.FindByEmail(email)
+func (s *AuthServiceImpl) Register(ctx context.Context, name, email, password string) (string, error) {
+	user, err := s.userRepo.FindByEmail(ctx, email)
 	if err != nil {
 		return "", err
 	}
@@ -70,7 +71,7 @@ func (s *AuthServiceImpl) Register(name, email, password string) (string, error)
 		RoleID:       1,
 	}
 
-	err = s.userRepo.Create(&newUser)
+	err = s.userRepo.Create(ctx, &newUser)
 	if err != nil {
 		return "", err
 	}
@@ -80,7 +81,7 @@ func (s *AuthServiceImpl) Register(name, email, password string) (string, error)
 
 	token, err := s.jwtProvider.GenerateAccessToken(
 		newUser.Name,
-		models.RoleWriter,
+		models.GetRoleNameByID(newUser.RoleID),
 		newUser.ID,
 		accessTokenExp, // 有効期限
 		now,            // 発行時刻
@@ -93,9 +94,9 @@ func (s *AuthServiceImpl) Register(name, email, password string) (string, error)
 	return token, nil
 }
 
-func (s *AuthServiceImpl) Login(email, password string) (string, string, error) {
+func (s *AuthServiceImpl) Login(ctx context.Context, email, password string) (string, string, error) {
 	// メールアドレス, パスワードの付け合わせ
-	user, err := s.userRepo.FindByEmail(email)
+	user, err := s.userRepo.FindByEmail(ctx, email)
 	if err != nil {
 		return "", "", err
 	}
@@ -114,9 +115,11 @@ func (s *AuthServiceImpl) Login(email, password string) (string, string, error) 
 	accessTokenExp := now.Add(s.accessTokenTTL)
 	refreshTokenExp := now.Add(s.refreshTokenTTL)
 
+	roleName := models.GetRoleNameByID(user.RoleID)
+
 	accessToken, err := s.jwtProvider.GenerateAccessToken(
 		user.Name,
-		models.RoleWriter,
+		roleName,
 		user.ID,
 		accessTokenExp, // 有効期限
 		now,            // 発行時刻
@@ -128,7 +131,7 @@ func (s *AuthServiceImpl) Login(email, password string) (string, string, error) 
 
 	refreshToken, err := s.jwtProvider.GenerateRefreshToken(
 		user.Name,
-		models.RoleWriter,
+		roleName,
 		user.ID,
 		refreshTokenExp,
 		now,
@@ -141,13 +144,13 @@ func (s *AuthServiceImpl) Login(email, password string) (string, string, error) 
 	return accessToken, refreshToken, nil
 }
 
-func (s *AuthServiceImpl) RefreshToken(refreshToken string) (*TokenPair, error) {
+func (s *AuthServiceImpl) RefreshToken(ctx context.Context, refreshToken string) (*TokenPair, error) {
 	claims, err := s.jwtProvider.VerifyJWT(refreshToken)
 	if err != nil {
 		return nil, fmt.Errorf("failed to verify refresh token: %w", err)
 	}
 
-	user, err := s.userRepo.FindByName(claims.UserName)
+	user, err := s.userRepo.FindByName(ctx, claims.UserName)
 	if err != nil {
 		return nil, fmt.Errorf("invalid claim from verify refresh token: %w", err)
 	}
@@ -160,9 +163,11 @@ func (s *AuthServiceImpl) RefreshToken(refreshToken string) (*TokenPair, error) 
 	accessTokenExp := now.Add(s.accessTokenTTL)
 	refreshTokenExp := now.Add(s.refreshTokenTTL)
 
+	roleName := models.GetRoleNameByID(user.RoleID)
+
 	newAccessToken, err := s.jwtProvider.GenerateAccessToken(
 		user.Name,
-		models.RoleWriter,
+		roleName,
 		user.ID,
 		accessTokenExp,
 		now,
@@ -174,7 +179,7 @@ func (s *AuthServiceImpl) RefreshToken(refreshToken string) (*TokenPair, error) 
 
 	newRefreshToken, err := s.jwtProvider.GenerateRefreshToken(
 		user.Name,
-		models.RoleWriter,
+		roleName,
 		user.ID,
 		refreshTokenExp,
 		now,
@@ -188,13 +193,13 @@ func (s *AuthServiceImpl) RefreshToken(refreshToken string) (*TokenPair, error) 
 	return tokenPair, nil
 }
 
-func (s *AuthServiceImpl) GetMe(userID string) (*models.User, error) {
+func (s *AuthServiceImpl) GetMe(ctx context.Context, userID string) (*models.User, error) {
 	toUintUserID, err := strconv.ParseUint(userID, 10, 64)
 	if err != nil {
 		return nil, fmt.Errorf("failed to cast userID  : %w", err)
 	}
 
-	user, err := s.userRepo.FindByID(uint(toUintUserID))
+	user, err := s.userRepo.FindByID(ctx, uint(toUintUserID))
 	if err != nil {
 		return nil, fmt.Errorf("failed to find user: %w", err)
 	}
@@ -206,13 +211,13 @@ func (s *AuthServiceImpl) GetMe(userID string) (*models.User, error) {
 	return user, nil
 }
 
-func (s *AuthServiceImpl) ChangePassword(userID, oldPassword, newPassword string) error {
+func (s *AuthServiceImpl) ChangePassword(ctx context.Context, userID, oldPassword, newPassword string) error {
 	toUintUserID, err := strconv.ParseUint(userID, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to cast userID  : %w", err)
 	}
 
-	user, err := s.userRepo.FindByID(uint(toUintUserID))
+	user, err := s.userRepo.FindByID(ctx, uint(toUintUserID))
 	if err != nil {
 		return fmt.Errorf("failed to find user: %w", err)
 	}
@@ -227,7 +232,7 @@ func (s *AuthServiceImpl) ChangePassword(userID, oldPassword, newPassword string
 		return fmt.Errorf("failed to hash password: %w", err)
 	}
 
-	err = s.userRepo.UpdatePassword(uint(toUintUserID), hashedNewPassword)
+	err = s.userRepo.UpdatePassword(ctx, uint(toUintUserID), hashedNewPassword)
 	if err != nil {
 		return fmt.Errorf("failed to update password: %w", err)
 	}

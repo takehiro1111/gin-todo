@@ -11,14 +11,14 @@ INSERT INTO user_roles (name, display_order, is_active) VALUES
   ('writer', 2, true),
   ('viewer', 3, true);
 
+-- パスワードは全て 'password123' のbcryptハッシュ
 INSERT INTO users (email, password_hash, name, role_id) VALUES
-  ('admin@example.com', '$hashed_password', 'Admin User', 1),
-  ('user1@example.com', '$hashed_password', 'Test User 1', 2),
-  ('user2@example.com', '$hashed_password', 'Test User 2', 3);
+  ('admin@example.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZRGdjGj/n3.0B1Qc6T5PQxqUzuSO2', 'Admin User', 1),
+  ('user1@example.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZRGdjGj/n3.0B1Qc6T5PQxqUzuSO2', 'Test User 1', 2)
 
 INSERT INTO tasks (user_id, title, status_id, priority, due_date) VALUES
-  (2, 'タスク1', 1, 'high', '2025-12-31'),
-  (2, 'タスク2', 2, 'medium', '2025-11-30'),
-  (3, 'タスク3', 3, 'low', NULL);
+  (14, 'タスク1', 1, 'high', NULL),
+  (14, 'タスク2', 2, 'medium', NULL),
+  (14, 'タスク3', 3, 'low', NULL);
 
 
