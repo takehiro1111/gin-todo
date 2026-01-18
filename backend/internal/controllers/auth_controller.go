@@ -21,6 +21,7 @@ type AuthController interface {
 	GetMe(c *gin.Context)
 	ChangePassword(c *gin.Context)
 	ForgotPassword(c *gin.Context)
+	ResetPassword(c *gin.Context)
 }
 
 type AuthControllerImpl struct {
@@ -58,6 +59,11 @@ type RefreshTokenRequest struct {
 
 type ForgotPasswordRequest struct {
 	Email string `json:"email" binding:"required"`
+}
+
+type ResetPasswordRequest struct {
+	ResetToken  string `json:"reset_token" binding:"required"`
+	NewPassword string `json:"new_password" binding:"required"`
 }
 
 // Register godoc
@@ -336,7 +342,7 @@ func (a *AuthControllerImpl) ChangePassword(c *gin.Context) {
 // @Accept       json
 // @Produce      json
 // @Success      201 {object} utils.SuccessResponse
-// @Failure      404 {object} utils.ErrorResponse
+// @Failure      400 {object} utils.ErrorResponse
 // @Failure      500 {object} utils.ErrorResponse
 // @Router       /api/auth/forgot [post]
 func (a *AuthControllerImpl) ForgotPassword(c *gin.Context) {
@@ -374,4 +380,51 @@ func (a *AuthControllerImpl) ForgotPassword(c *gin.Context) {
 	}
 
 	utils.ResponseSuccess(c, http.StatusCreated, "generate password reset token successfully", resetToken, a.timeProvider)
+}
+
+// ResetPassword godoc
+// @Summary      パスワードリセット
+// @Description  トークン検証を行ってパスワードリセットを実行
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Success      201 {object} utils.SuccessResponse
+// @Failure      400 {object} utils.ErrorResponse
+// @Failure      500 {object} utils.ErrorResponse
+// @Router       /api/auth/reset [post]
+func (a *AuthControllerImpl) ResetPassword(c *gin.Context) {
+	var req ResetPasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		// loggerを実装予定
+		utils.ResponseError(c, http.StatusBadRequest,
+			"invalid request",
+			err.Error(),
+			a.timeProvider,
+		)
+		return
+	}
+
+	err := validators.NewAuthenticateValidator(
+		validators.WithPassword(req.NewPassword),
+	)
+	if err != nil {
+		utils.ResponseError(c, http.StatusBadRequest,
+			"failed to validation",
+			err.Error(),
+			a.timeProvider,
+		)
+		return
+	}
+
+	err = a.authService.ResetPassword(c, req.ResetToken, req.NewPassword)
+	if err != nil {
+		utils.ResponseError(c, http.StatusInternalServerError,
+			"failed reset password",
+			err.Error(),
+			a.timeProvider,
+		)
+		return
+	}
+
+	utils.ResponseSuccess(c, http.StatusCreated, "reset password successfully", nil, a.timeProvider)
 }

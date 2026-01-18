@@ -34,7 +34,9 @@ func SetupRoutes(r *gin.Engine, adminCtrl controllers.AdminController, authCtrl 
 		authPublic.POST("/register", authCtrl.Register)
 		authPublic.POST("/login", authCtrl.Login)
 		authPublic.POST("/forgot", authCtrl.ForgotPassword)
+		authPublic.POST("/reset", authCtrl.ResetPassword)
 	}
+
 	// 認証必須（ログイン後）
 	authProtected := r.Group("/api/auth")
 	authProtected.Use(middleware.VerifyUser(jwtProvider))
@@ -55,8 +57,6 @@ func SetupRoutes(r *gin.Engine, adminCtrl controllers.AdminController, authCtrl 
 		apiTask.PATCH("/:id", taskCtrl.UpdateTaskStatus)
 		apiTask.DELETE("/:id", taskCtrl.DeleteTask)
 	}
-
-	// 管理者機能を後で追加する
 }
 
 // HealthCheck godoc

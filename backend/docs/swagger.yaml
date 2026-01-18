@@ -187,8 +187,8 @@ paths:
           description: Created
           schema:
             $ref: '#/definitions/utils.SuccessResponse'
-        "404":
-          description: Not Found
+        "400":
+          description: Bad Request
           schema:
             $ref: '#/definitions/utils.ErrorResponse'
         "500":
@@ -370,6 +370,29 @@ paths:
           schema:
             $ref: '#/definitions/utils.ErrorResponse'
       summary: ユーザー登録
+      tags:
+      - auth
+  /api/auth/reset:
+    post:
+      consumes:
+      - application/json
+      description: トークン検証を行ってパスワードリセットを実行
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/utils.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      summary: パスワードリセット
       tags:
       - auth
   /api/health:

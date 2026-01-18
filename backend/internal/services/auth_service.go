@@ -19,6 +19,7 @@ type AuthService interface {
 	GetMe(ctx context.Context, userID string) (*models.User, error)
 	ChangePassword(ctx context.Context, userID, oldPassword, newPassword string) error
 	ForgotPassword(ctx context.Context, email string) (string, error)
+	ResetPassword(ctx context.Context, resetToken, newPassword string) error
 }
 
 type AuthServiceImpl struct {
@@ -29,6 +30,7 @@ type AuthServiceImpl struct {
 	uuidGenerator          utils.UUIDGenerator
 	accessTokenTTL         time.Duration
 	refreshTokenTTL        time.Duration
+	timeProvider           utils.TimeProvider
 }
 
 type TokenPair struct {
@@ -43,7 +45,7 @@ func NewTokenPair(accessToken, refreshToken string) *TokenPair {
 	}
 }
 
-func NewAuthService(userRepo repositories.UserRepository, passwordResetTokenRepo repositories.PasswordResetTokenRepository, passwordManager utils.PasswordManager, jwtProvider utils.JWTProvider, accessTokenTTL, refreshTokenTTL time.Duration, uuidGenerator utils.UUIDGenerator) *AuthServiceImpl {
+func NewAuthService(userRepo repositories.UserRepository, passwordResetTokenRepo repositories.PasswordResetTokenRepository, passwordManager utils.PasswordManager, jwtProvider utils.JWTProvider, accessTokenTTL, refreshTokenTTL time.Duration, uuidGenerator utils.UUIDGenerator, timeProvider utils.TimeProvider) *AuthServiceImpl {
 	return &AuthServiceImpl{
 		userRepo:               userRepo,
 		passwordResetTokenRepo: passwordResetTokenRepo,
@@ -52,6 +54,7 @@ func NewAuthService(userRepo repositories.UserRepository, passwordResetTokenRepo
 		accessTokenTTL:         accessTokenTTL,
 		refreshTokenTTL:        refreshTokenTTL,
 		uuidGenerator:          uuidGenerator,
+		timeProvider:           timeProvider,
 	}
 }
 func (s *AuthServiceImpl) Register(ctx context.Context, name, email, password string) (string, error) {
@@ -81,7 +84,7 @@ func (s *AuthServiceImpl) Register(ctx context.Context, name, email, password st
 		return "", err
 	}
 
-	now := time.Now()
+	now := s.timeProvider.Now()
 	accessTokenExp := now.Add(s.accessTokenTTL)
 
 	token, err := s.jwtProvider.GenerateAccessToken(
@@ -116,7 +119,7 @@ func (s *AuthServiceImpl) Login(ctx context.Context, email, password string) (st
 	}
 
 	// JWT生成
-	now := time.Now()
+	now := s.timeProvider.Now()
 	accessTokenExp := now.Add(s.accessTokenTTL)
 	refreshTokenExp := now.Add(s.refreshTokenTTL)
 
@@ -164,7 +167,7 @@ func (s *AuthServiceImpl) RefreshToken(ctx context.Context, refreshToken string)
 		return nil, fmt.Errorf("user not found")
 	}
 
-	now := time.Now()
+	now := s.timeProvider.Now()
 	accessTokenExp := now.Add(s.accessTokenTTL)
 	refreshTokenExp := now.Add(s.refreshTokenTTL)
 
@@ -256,7 +259,7 @@ func (s *AuthServiceImpl) ForgotPassword(ctx context.Context, email string) (str
 		return "", fmt.Errorf("user not found")
 	}
 
-	now := time.Now()
+	now := s.timeProvider.Now()
 	resetTokenExp := now.Add(1 * time.Hour)
 
 	// UUIDの生成
@@ -274,4 +277,48 @@ func (s *AuthServiceImpl) ForgotPassword(ctx context.Context, email string) (str
 	}
 
 	return newToken.ResetToken, nil
+}
+
+func (s *AuthServiceImpl) ResetPassword(ctx context.Context, resetToken, newPassword string) error {
+	// リセットトークンの検証
+	token, err := s.passwordResetTokenRepo.FindByToken(ctx, resetToken)
+	if err != nil {
+		return fmt.Errorf("failed to find user by email: %w", err)
+	}
+
+	if token == nil {
+		return fmt.Errorf("invalid reset token")
+	}
+
+	now := s.timeProvider.Now()
+
+	// リセットトークンの期限をチェック
+	if now.After(token.ExpiresAt) {
+		return fmt.Errorf("reset token expired")
+	}
+
+	// 使用済みチェック
+	if token.UsedAt != nil {
+		return fmt.Errorf("reset token already used")
+	}
+
+	// パスワードのハッシュ化
+	hashedNewPassword, err := s.passwordManager.HashPassword(newPassword)
+	if err != nil {
+		return fmt.Errorf("failed to hash new password: %w", err)
+	}
+
+	// 新しいパスワードへ置き換える
+	err = s.userRepo.UpdatePassword(ctx, token.UserID, hashedNewPassword)
+	if err != nil {
+		return err
+	}
+
+	// リセットトークンを使用済みにする
+	err = s.passwordResetTokenRepo.UpdateUseAtByID(ctx, token.ID, now)
+	if err != nil {
+		return fmt.Errorf("failed to update used_at: %w", err)
+	}
+
+	return nil
 }
