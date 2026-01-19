@@ -341,7 +341,7 @@ func (a *AuthControllerImpl) ChangePassword(c *gin.Context) {
 // @Tags         auth
 // @Accept       json
 // @Produce      json
-// @Success      201 {object} utils.SuccessResponse
+// @Success      200 {object} utils.SuccessResponse
 // @Failure      400 {object} utils.ErrorResponse
 // @Failure      500 {object} utils.ErrorResponse
 // @Router       /api/auth/forgot [post]
