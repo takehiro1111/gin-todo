@@ -363,7 +363,9 @@ func (a *AuthControllerImpl) ForgotPassword(c *gin.Context) {
 		return
 	}
 
-	resetToken, err := a.authService.ForgotPassword(c, req.Email)
+	// 後工程でリセットトークンをEmailでの検証を実装する。
+	// その際にtokenを活用するよう修正予定。
+	_, err = a.authService.ForgotPassword(c, req.Email)
 	if err != nil {
 		utils.ResponseError(c, http.StatusInternalServerError,
 			"failed generate password reset token",
@@ -373,5 +375,6 @@ func (a *AuthControllerImpl) ForgotPassword(c *gin.Context) {
 		return
 	}
 
-	utils.ResponseSuccess(c, http.StatusCreated, "generate password reset token successfully", resetToken, a.timeProvider)
+	// 後工程でメール送信を実装する
+	utils.ResponseSuccess(c, http.StatusOK, "password reset email send successfully", nil, a.timeProvider)
 }

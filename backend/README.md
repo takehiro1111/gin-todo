@@ -528,12 +528,12 @@ psql -U gin -h localhost -d gin-todo
 
 #### 13.パスワード再設定処理
 - [x] `internal/services/auth_service.go` - ForgotPassword() メソッド実装（リセットトークン生成、トークンのDB保存）
-  - メール送信での確認は完成後に意欲が湧いたら機能追加する。
 - [ ] `internal/services/auth_service.go` - ResetPassword() メソッド実装（トークン検証、パスワード更新）
 - [x] `internal/controllers/auth_controller.go` - ForgotPassword() ハンドラ実装（emailのバインド）
 - [ ] `internal/controllers/auth_controller.go` - ResetPassword() ハンドラ実装（token, new_passwordのバインド）
 - [x] `internal/routes/routes.go` - POST /auth/forgot 設定（認証不要）
 - [x] `internal/routes/routes.go` - POST /auth/reset 設定（認証不要）
+- [ ]メール検証処理の実装
 ---
 
 #### 14. エクスポート機能実装
