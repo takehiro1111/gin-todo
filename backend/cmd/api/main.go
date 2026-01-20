@@ -107,7 +107,11 @@ func main() {
 	}
 
 	userRepo := repositories.NewUserRepository(db)
+	passwordResetTokenRepo := repositories.NewPasswordResetTokenRepository(db)
 	taskRepo := repositories.NewTaskRepository(db)
+
+	// フィールドを持たないのでファクトリーメソッドは実装してない
+	uuidGenerator := &utils.UUIDGeneratorImpl{}
 
 	accessTokenTTL := time.Minute * 15
 	refreshTokenTTL := time.Hour * 24 * 7
@@ -117,7 +121,7 @@ func main() {
 	timeProvider := utils.NewRealTimeProvider()
 	passwordManager := utils.NewBcryptHasher()
 	adminService := services.NewAdminService(userRepo)
-	authService := services.NewAuthService(userRepo, passwordManager, jwtProvider, accessTokenTTL, refreshTokenTTL)
+	authService := services.NewAuthService(userRepo, passwordResetTokenRepo, passwordManager, jwtProvider, accessTokenTTL, refreshTokenTTL, uuidGenerator)
 	taskService := services.NewTaskService(taskRepo)
 
 	adminCtrl := controllers.NewAdminControllerImpl(adminService, timeProvider)

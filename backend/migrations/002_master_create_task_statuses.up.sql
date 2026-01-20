@@ -17,4 +17,5 @@ INSERT INTO task_statuses (name, description, display_order) VALUES
   ('todo', '未着手', 1),
   ('in_progress', '進行中', 2),
   ('done', '完了', 3),
-  ('archived', 'アーカイブ', 4);
+  ('archived', 'アーカイブ', 4)
+ON CONFLICT DO NOTHING;
