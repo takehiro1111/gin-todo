@@ -341,15 +341,32 @@ npm run format
 ## Reference
 https://gin-gonic.com/ja/docs/
 
+# 検証コマンド
+```zsh
+# ログイン
 curl -X POST http://localhost:8080/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"admin2@example.com","password":"password123"}'
 
+# ユーザー一覧の取得
 curl -X GET http://localhost:8080/api/admin/users \
   -H "Authorization: Bearer <admin_access_token>"
 
+# ユーザーごとのタスク一覧の取得
 curl -X GET http://localhost:8080/api/admin/tasks \
   -H "Authorization: Bearer <admin_access_token>"
+
+# リセットトークンの発行
+curl -X POST http://localhost:8080/api/auth/forgot \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin2@example.com"}'
+
+# パスワードをリセット
+curl -X POST http://localhost:8080/api/auth/reset \
+  -H "Content-Type: application/json" \
+  -d '{"reset_token":"xxx", "new_password": "test4583"}'
+```
+
 
 ## DBへの接続
 ```zsh
@@ -528,12 +545,12 @@ psql -U gin -h localhost -d gin-todo
 
 #### 13.パスワード再設定処理
 - [x] `internal/services/auth_service.go` - ForgotPassword() メソッド実装（リセットトークン生成、トークンのDB保存）
-- [ ] `internal/services/auth_service.go` - ResetPassword() メソッド実装（トークン検証、パスワード更新）
+- [x] `internal/services/auth_service.go` - ResetPassword() メソッド実装（トークン検証、パスワード更新）
 - [x] `internal/controllers/auth_controller.go` - ForgotPassword() ハンドラ実装（emailのバインド）
-- [ ] `internal/controllers/auth_controller.go` - ResetPassword() ハンドラ実装（token, new_passwordのバインド）
+- [x] `internal/controllers/auth_controller.go` - ResetPassword() ハンドラ実装（token, new_passwordのバインド）
 - [x] `internal/routes/routes.go` - POST /auth/forgot 設定（認証不要）
 - [x] `internal/routes/routes.go` - POST /auth/reset 設定（認証不要）
-- [ ]メール検証処理の実装
+- [ ] メール検証処理の実装
 ---
 
 #### 14. エクスポート機能実装

@@ -120,8 +120,9 @@ func main() {
 	jwtProvider := utils.NewDefaultJWTProvider(items[services.JwtSecretKey], issuer)
 	timeProvider := utils.NewRealTimeProvider()
 	passwordManager := utils.NewBcryptHasher()
+
 	adminService := services.NewAdminService(userRepo)
-	authService := services.NewAuthService(userRepo, passwordResetTokenRepo, passwordManager, jwtProvider, accessTokenTTL, refreshTokenTTL, uuidGenerator)
+	authService := services.NewAuthService(userRepo, passwordResetTokenRepo, passwordManager, jwtProvider, accessTokenTTL, refreshTokenTTL, uuidGenerator, timeProvider)
 	taskService := services.NewTaskService(taskRepo)
 
 	adminCtrl := controllers.NewAdminControllerImpl(adminService, timeProvider)
