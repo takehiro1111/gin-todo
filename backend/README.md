@@ -555,7 +555,8 @@ psql -U gin -h localhost -d gin-todo
 - [x] `internal/controllers/auth_controller.go` - ResetPassword() ハンドラ実装（token, new_passwordのバインド）
 - [x] `internal/routes/routes.go` - POST /auth/forgot 設定（認証不要）
 - [x] `internal/routes/routes.go` - POST /auth/reset 設定（認証不要）
-- [ ] メール検証処理の実装
+- [x] `internal/controllers/email_service.go` - SendPasswordResetEmail()メソッド実装(メール送信処理)
+
 ---
 
 #### 14. エクスポート機能実装
