@@ -127,7 +127,17 @@ func main() {
 	}
 	sesClient := aws.NewMail(sesSDKCfg)
 
-	emailCfg := services.NewEmailConfig(os.Getenv("EMAIL_FROM"), os.Getenv("PASSWORD_RESET_BASE_URL"))
+	emailFrom := os.Getenv("EMAIL_FROM")
+	if emailFrom == "" {
+		log.Fatal("required environment variable EMAIL_FROM is not set or empty")
+	}
+
+	passwordResetBaseURL := os.Getenv("PASSWORD_RESET_BASE_URL")
+	if passwordResetBaseURL == "" {
+		log.Fatal("required environment variable PASSWORD_RESET_BASE_URL is not set or empty")
+	}
+
+	emailCfg := services.NewEmailConfig(emailFrom, passwordResetBaseURL)
 
 	adminService := services.NewAdminService(userRepo)
 	emailService := services.NewEmailService(sesClient, emailCfg)
