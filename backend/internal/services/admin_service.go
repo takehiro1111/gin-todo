@@ -16,7 +16,7 @@ type AdminServiceImpl struct {
 	userRepo repositories.UserRepository
 }
 
-func NewAdminService(userRepo repositories.UserRepository) *AdminServiceImpl {
+func NewAdminService(userRepo repositories.UserRepository) AdminService {
 	return &AdminServiceImpl{
 		userRepo: userRepo,
 	}

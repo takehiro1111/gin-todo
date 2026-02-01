@@ -121,8 +121,27 @@ func main() {
 	timeProvider := utils.NewRealTimeProvider()
 	passwordManager := utils.NewBcryptHasher()
 
+	sesSDKCfg, err := aws.NewSESConfig(ctx, env)
+	if err != nil {
+		log.Fatalf("aws client initialization failed: %v", err)
+	}
+	sesClient := aws.NewMail(sesSDKCfg)
+
+	emailFrom := os.Getenv("EMAIL_FROM")
+	if emailFrom == "" {
+		log.Fatal("required environment variable EMAIL_FROM is not set or empty")
+	}
+
+	passwordResetBaseURL := os.Getenv("PASSWORD_RESET_BASE_URL")
+	if passwordResetBaseURL == "" {
+		log.Fatal("required environment variable PASSWORD_RESET_BASE_URL is not set or empty")
+	}
+
+	emailCfg := services.NewEmailConfig(emailFrom, passwordResetBaseURL)
+
 	adminService := services.NewAdminService(userRepo)
-	authService := services.NewAuthService(userRepo, passwordResetTokenRepo, passwordManager, jwtProvider, accessTokenTTL, refreshTokenTTL, uuidGenerator, timeProvider)
+	emailService := services.NewEmailService(sesClient, emailCfg)
+	authService := services.NewAuthService(userRepo, passwordResetTokenRepo, passwordManager, jwtProvider, accessTokenTTL, refreshTokenTTL, uuidGenerator, timeProvider, emailService)
 	taskService := services.NewTaskService(taskRepo)
 
 	adminCtrl := controllers.NewAdminControllerImpl(adminService, timeProvider)

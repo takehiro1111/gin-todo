@@ -18,7 +18,7 @@ type AuthService interface {
 	RefreshToken(ctx context.Context, refreshToken string) (*TokenPair, error)
 	GetMe(ctx context.Context, userID string) (*models.User, error)
 	ChangePassword(ctx context.Context, userID, oldPassword, newPassword string) error
-	ForgotPassword(ctx context.Context, email string) (string, error)
+	ForgotPassword(ctx context.Context, email string) error
 	ResetPassword(ctx context.Context, resetToken, newPassword string) error
 }
 
@@ -31,6 +31,7 @@ type AuthServiceImpl struct {
 	accessTokenTTL         time.Duration
 	refreshTokenTTL        time.Duration
 	timeProvider           utils.TimeProvider
+	emailService           EmailService
 }
 
 type TokenPair struct {
@@ -45,7 +46,7 @@ func NewTokenPair(accessToken, refreshToken string) *TokenPair {
 	}
 }
 
-func NewAuthService(userRepo repositories.UserRepository, passwordResetTokenRepo repositories.PasswordResetTokenRepository, passwordManager utils.PasswordManager, jwtProvider utils.JWTProvider, accessTokenTTL, refreshTokenTTL time.Duration, uuidGenerator utils.UUIDGenerator, timeProvider utils.TimeProvider) *AuthServiceImpl {
+func NewAuthService(userRepo repositories.UserRepository, passwordResetTokenRepo repositories.PasswordResetTokenRepository, passwordManager utils.PasswordManager, jwtProvider utils.JWTProvider, accessTokenTTL, refreshTokenTTL time.Duration, uuidGenerator utils.UUIDGenerator, timeProvider utils.TimeProvider, emailService EmailService) AuthService {
 	return &AuthServiceImpl{
 		userRepo:               userRepo,
 		passwordResetTokenRepo: passwordResetTokenRepo,
@@ -55,6 +56,7 @@ func NewAuthService(userRepo repositories.UserRepository, passwordResetTokenRepo
 		refreshTokenTTL:        refreshTokenTTL,
 		uuidGenerator:          uuidGenerator,
 		timeProvider:           timeProvider,
+		emailService:           emailService,
 	}
 }
 func (s *AuthServiceImpl) Register(ctx context.Context, name, email, password string) (string, error) {
@@ -248,35 +250,40 @@ func (s *AuthServiceImpl) ChangePassword(ctx context.Context, userID, oldPasswor
 	return nil
 }
 
-func (s *AuthServiceImpl) ForgotPassword(ctx context.Context, email string) (string, error) {
+func (s *AuthServiceImpl) ForgotPassword(ctx context.Context, email string) error {
 	// 一致するユーザーが存在するかemail検証
 	user, err := s.userRepo.FindByEmail(ctx, email)
 	if err != nil {
-		return "", fmt.Errorf("failed to find user by email: %w", err)
+		return fmt.Errorf("failed to find user by email: %w", err)
 	}
 
 	if user == nil {
-		return "", fmt.Errorf("user not found")
+		return fmt.Errorf("user not found")
 	}
 
 	now := s.timeProvider.Now()
 	resetTokenExp := now.Add(1 * time.Hour)
 
-	// UUIDの生成
-	uuid := s.uuidGenerator.UUIDGenerate()
+	// Tokenの生成
+	resetToken := s.uuidGenerator.UUIDGenerate()
 	// DBに保存
 	newToken := models.PasswordResetToken{
-		ResetToken: uuid,
+		ResetToken: resetToken,
 		UserID:     user.ID,
 		ExpiresAt:  resetTokenExp,
 	}
 
 	err = s.passwordResetTokenRepo.Create(ctx, &newToken)
 	if err != nil {
-		return "", err
+		return err
 	}
 
-	return newToken.ResetToken, nil
+	err = s.emailService.SendPasswordResetEmail(ctx, user.Email, newToken.ResetToken)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (s *AuthServiceImpl) ResetPassword(ctx context.Context, resetToken, newPassword string) error {

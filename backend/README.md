@@ -343,10 +343,15 @@ https://gin-gonic.com/ja/docs/
 
 # 検証コマンド
 ```zsh
+# ユーザー登録
+curl -X POST http://localhost:8080/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"name":"test-taro","email":"test@gmail.com","password":"password123"}'
+
 # ログイン
 curl -X POST http://localhost:8080/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin2@example.com","password":"password123"}'
+  -d '{"email":"test@gmail.com","password":"password123"}'
 
 # ユーザー一覧の取得
 curl -X GET http://localhost:8080/api/admin/users \
@@ -359,7 +364,7 @@ curl -X GET http://localhost:8080/api/admin/tasks \
 # リセットトークンの発行
 curl -X POST http://localhost:8080/api/auth/forgot \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin2@example.com"}'
+  -d '{"email":"test@gmail.com"}'
 
 # パスワードをリセット
 curl -X POST http://localhost:8080/api/auth/reset \
@@ -550,7 +555,8 @@ psql -U gin -h localhost -d gin-todo
 - [x] `internal/controllers/auth_controller.go` - ResetPassword() ハンドラ実装（token, new_passwordのバインド）
 - [x] `internal/routes/routes.go` - POST /auth/forgot 設定（認証不要）
 - [x] `internal/routes/routes.go` - POST /auth/reset 設定（認証不要）
-- [ ] メール検証処理の実装
+- [x] `internal/controllers/email_service.go` - SendPasswordResetEmail()メソッド実装(メール送信処理)
+
 ---
 
 #### 14. エクスポート機能実装
