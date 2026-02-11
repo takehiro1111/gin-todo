@@ -146,9 +146,10 @@ func main() {
 
 	adminCtrl := controllers.NewAdminControllerImpl(adminService, timeProvider)
 	authCtrl := controllers.NewAuthControllerImpl(authService, timeProvider)
-	taskCtrl := controllers.NewTaskController(taskService, timeProvider)
+	taskCtrl := controllers.NewTaskControllerImpl(taskService, timeProvider)
+	exportCtrl := controllers.NewExportControllerImpl(taskService, timeProvider)
 
-	routes.SetupRoutes(r, adminCtrl, authCtrl, taskCtrl, jwtProvider)
+	routes.SetupRoutes(r, adminCtrl, authCtrl, taskCtrl, exportCtrl, jwtProvider)
 
 	srv := &http.Server{
 		Addr:    ":8080",

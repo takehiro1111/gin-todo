@@ -183,8 +183,8 @@ paths:
       produces:
       - application/json
       responses:
-        "201":
-          description: Created
+        "200":
+          description: OK
           schema:
             $ref: '#/definitions/utils.SuccessResponse'
         "400":
@@ -619,6 +619,29 @@ paths:
       summary: タスク更新
       tags:
       - task
+  /api/tasks/export/csv:
+    get:
+      consumes:
+      - text/csv
+      description: Task一覧のCSVエクスポートを実行
+      produces:
+      - text/csv
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.SuccessResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      summary: Task一覧のCSVエクスポート
+      tags:
+      - export
 securityDefinitions:
   BearerAuth:
     description: Type "Bearer" followed by a space and JWT token.
