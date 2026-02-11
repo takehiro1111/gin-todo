@@ -118,8 +118,8 @@ func TestExportTasksCSV(t *testing.T) {
 	}
 }
 
+// DB IDではなくループインデックス(1始まり)がCSVのIDになることを検証
 func TestExportTasksCSV_IDIsLoopIndex(t *testing.T) {
-	// DB IDではなくループインデックス(1始まり)がCSVのIDになることを検証
 	mock := &mockTaskFetcher{
 		tasks: []models.Task{
 			{BaseModel: models.BaseModel{ID: 10}, Title: "タスクA"},
@@ -143,8 +143,8 @@ func TestExportTasksCSV_IDIsLoopIndex(t *testing.T) {
 	assert.NotContains(t, body, "99,")
 }
 
+// タスク0件でもヘッダー行が出力されることを検証
 func TestExportTasksCSV_EmptyCSVHasHeaderOnly(t *testing.T) {
-	// タスク0件でもヘッダー行が出力されることを検証
 	mock := &mockTaskFetcher{tasks: []models.Task{}}
 	ctrl, w, c := setupExportTest(mock)
 	c.Set("user_id", uint(1))
