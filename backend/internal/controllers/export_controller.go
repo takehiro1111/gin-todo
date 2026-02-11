@@ -1,26 +1,33 @@
 package controllers
 
 import (
+	"context"
 	"encoding/csv"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/takehiro1111/gin-todo/backend/internal/services"
+	"github.com/takehiro1111/gin-todo/backend/internal/models"
 	"github.com/takehiro1111/gin-todo/backend/internal/utils"
 )
 
+// ExportController はCSVエクスポート機能のインターフェース
 type ExportController interface {
 	ExportTasksCSV(c *gin.Context)
 }
 
+// TaskFetcher はExportControllerが必要とするメソッドのみを定義したインターフェース
+type TaskFetcher interface {
+	GetAllTasks(ctx context.Context, userID uint) ([]models.Task, error)
+}
+
 type ExportControllerImpl struct {
-	taskService  services.TaskService
+	taskService  TaskFetcher
 	timeProvider *utils.RealTimeProvider
 }
 
-func NewExportControllerImpl(taskService services.TaskService, timeProvider *utils.RealTimeProvider) *ExportControllerImpl {
+func NewExportControllerImpl(taskService TaskFetcher, timeProvider *utils.RealTimeProvider) *ExportControllerImpl {
 	return &ExportControllerImpl{
 		taskService:  taskService,
 		timeProvider: timeProvider,
@@ -67,6 +74,7 @@ func (e *ExportControllerImpl) ExportTasksCSV(c *gin.Context) {
 
 	err = writer.Write([]string{"ID", "Title"})
 	if err != nil {
+		// CSV出力された後にエラーになった場合はログ用に記録だけ
 		c.Error(err)
 		return
 	}
