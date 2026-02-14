@@ -8,11 +8,12 @@ import (
 	"github.com/takehiro1111/gin-todo/backend/internal/controllers"
 	"github.com/takehiro1111/gin-todo/backend/internal/middleware"
 	"github.com/takehiro1111/gin-todo/backend/internal/utils"
+	"github.com/takehiro1111/gin-todo/backend/internal/websocket"
 	"net/http"
 )
 
 // main関数をシンプルにするため。
-func SetupRoutes(r *gin.Engine, adminCtrl controllers.AdminController, authCtrl controllers.AuthController, taskCtrl controllers.TaskController, exportCtrl controllers.ExportController, jwtProvider utils.JWTProvider) {
+func SetupRoutes(r *gin.Engine, adminCtrl controllers.AdminController, authCtrl controllers.AuthController, taskCtrl controllers.TaskController, exportCtrl controllers.ExportController, jwtProvider utils.JWTProvider, wsHub *websocket.Hub) {
 	// Swagger UI
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
@@ -62,6 +63,11 @@ func SetupRoutes(r *gin.Engine, adminCtrl controllers.AdminController, authCtrl 
 	apiTasks.Use(middleware.VerifyUser(jwtProvider))
 	{
 		apiTasks.GET("/export/csv", exportCtrl.ExportTasksCSV)
+	}
+
+	ws := r.Group("/api/ws")
+	{
+		ws.GET("/chat", wsHub.ChatServer)
 	}
 }
 

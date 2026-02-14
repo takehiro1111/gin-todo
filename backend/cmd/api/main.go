@@ -20,6 +20,7 @@ import (
 	"github.com/takehiro1111/gin-todo/backend/internal/routes"
 	"github.com/takehiro1111/gin-todo/backend/internal/services"
 	"github.com/takehiro1111/gin-todo/backend/internal/utils"
+	"github.com/takehiro1111/gin-todo/backend/internal/websocket"
 )
 
 // @title           Gin Todo API
@@ -159,7 +160,10 @@ func main() {
 	taskCtrl := controllers.NewTaskControllerImpl(taskService, timeProvider)
 	exportCtrl := controllers.NewExportControllerImpl(taskService, timeProvider)
 
-	routes.SetupRoutes(r, adminCtrl, authCtrl, taskCtrl, exportCtrl, jwtProvider)
+	wsHub := websocket.NewHub(timeProvider, jwtProvider)
+	go wsHub.Run()
+
+	routes.SetupRoutes(r, adminCtrl, authCtrl, taskCtrl, exportCtrl, jwtProvider, wsHub)
 
 	srv := &http.Server{
 		Addr:    ":8080",
