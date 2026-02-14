@@ -46,7 +46,7 @@ type UpdateTaskStatusRequest struct {
 	StatusID int64 `json:"status_id" binding:"required"`
 }
 
-func NewTaskController(taskService services.TaskService, timeProvider *utils.RealTimeProvider) *TaskControllerImpl {
+func NewTaskControllerImpl(taskService services.TaskService, timeProvider *utils.RealTimeProvider) *TaskControllerImpl {
 	return &TaskControllerImpl{
 		taskService:  taskService,
 		timeProvider: timeProvider,

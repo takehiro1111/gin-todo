@@ -12,7 +12,7 @@ import (
 )
 
 // main関数をシンプルにするため。
-func SetupRoutes(r *gin.Engine, adminCtrl controllers.AdminController, authCtrl controllers.AuthController, taskCtrl controllers.TaskController, jwtProvider utils.JWTProvider) {
+func SetupRoutes(r *gin.Engine, adminCtrl controllers.AdminController, authCtrl controllers.AuthController, taskCtrl controllers.TaskController, exportCtrl controllers.ExportController, jwtProvider utils.JWTProvider) {
 	// Swagger UI
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
@@ -56,6 +56,12 @@ func SetupRoutes(r *gin.Engine, adminCtrl controllers.AdminController, authCtrl 
 		apiTask.PUT("/:id", taskCtrl.UpdateTask)
 		apiTask.PATCH("/:id", taskCtrl.UpdateTaskStatus)
 		apiTask.DELETE("/:id", taskCtrl.DeleteTask)
+	}
+
+	apiTasks := r.Group("/api/tasks")
+	apiTasks.Use(middleware.VerifyUser(jwtProvider))
+	{
+		apiTasks.GET("/export/csv", exportCtrl.ExportTasksCSV)
 	}
 }
 

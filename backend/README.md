@@ -370,6 +370,11 @@ curl -X POST http://localhost:8080/api/auth/forgot \
 curl -X POST http://localhost:8080/api/auth/reset \
   -H "Content-Type: application/json" \
   -d '{"reset_token":"xxx", "new_password": "test4583"}'
+
+# CSVエクスポート
+curl -v -o export.csv \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InRlc3QtdGFybyIsInVzZXJfaWQiOjE2LCJyb2xlIjoiYWRtaW4iLCJpc3MiOiJnaW4tdG9kby1hcGkiLCJzdWIiOiJ0ZXN0LXRhcm8iLCJleHAiOjE3NzA3ODMwNjMsIm5iZiI6MTc3MDc4MjE2MywiaWF0IjoxNzcwNzgyMTYzfQ.58714jokXD2xbQmi2buVL2nTCuhKUeS-M1oSWJX9icY" \
+  http://localhost:8080/api/tasks/export/csv
 ```
 
 
@@ -561,9 +566,9 @@ psql -U gin -h localhost -d gin-todo
 
 #### 14. エクスポート機能実装
 
-- [ ] `internal/controllers/export_controller.go` - ExportController 実装
-- [ ] `internal/controllers/export_controller.go` - ExportTasksCSV() 実装（ストリーミング）
-- [ ] ルーティング追加 - GET /api/tasks/export/csv
+- [x] `internal/controllers/export_controller.go` - ExportController 実装
+- [x] `internal/controllers/export_controller.go` - ExportTasksCSV() 実装（ストリーミング）
+- [x] ルーティング追加 - GET /api/tasks/export/csv
 
 ---
 
