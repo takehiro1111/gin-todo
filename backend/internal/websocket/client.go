@@ -23,7 +23,8 @@ const (
 )
 
 // Client はWebSocket接続を持つ個別のクライアントを表す。
-// チャットルーム機能やユーザー情報の紐付け時に拡張予定。
+// 現在はHubが*websocket.Connを直接管理しているため未使用。
+// チャットルーム機能やユーザー情報の紐付け時に活用予定。
 type Client struct {
 	conn *websocket.Conn
 }

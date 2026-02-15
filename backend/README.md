@@ -382,7 +382,7 @@ curl -v -o export.csv \
   http://localhost:8080/api/tasks/export/csv
 
 # WebSocketチャット接続（wscat使用）
-wscat -c "ws://localhost:8080/api/ws/chat?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InRlc3QtdGFybyIsInVzZXJfaWQiOjE2LCJyb2xlIjoiYWRtaW4iLCJpc3MiOiJnaW4tdG9kby1hcGkiLCJzdWIiOiJ0ZXN0LXRhcm8iLCJleHAiOjE3NzExMzUwNjgsIm5iZiI6MTc3MTEzNDE2OCwiaWF0IjoxNzcxMTM0MTY4fQ.coqWJN1hjjnf3sDstiwoFhcV4qQAOV2YK81TUvsdAbg"
+wscat -c "ws://localhost:8080/api/ws/chat?token={access_token}"
 ```
 
 

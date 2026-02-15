@@ -33,10 +33,11 @@ type Hub struct {
 	mu sync.RWMutex
 	// timeProvider はテスト時にモック可能な時刻取得インターフェース
 	timeProvider utils.TimeProvider
-
+	// jwtProvider はWebSocket接続時のJWT認証に使用するプロバイダー
 	jwtProvider utils.JWTProvider
 }
 
+// ChatMessage はブロードキャスト時に全クライアントへ送信されるJSONメッセージを表す。
 type ChatMessage struct {
 	User    string `json:"user"`
 	Message string `json:"message"`
@@ -95,8 +96,14 @@ func (h *Hub) Run() {
 	}
 }
 
-// ChatServer はWebSocketチャットのメイン処理。
-// HTTP接続をWebSocketにアップグレードし、クライアントの登録・メッセージ読み取り・Ping/Pongを開始する。
+// ChatServer godoc
+// @Summary      WebSocketチャット接続
+// @Description  JWT認証付きのWebSocketチャットエンドポイント。クエリパラメータでJWTトークンを渡してHTTP接続をWebSocketにアップグレードする。接続後はリアルタイムでメッセージの送受信が可能。
+// @Tags         websocket
+// @Param        token query string true "JWTアクセストークン"
+// @Success      101 {string} string "WebSocket接続確立"
+// @Failure      401 {object} utils.ErrorResponse "認証エラー"
+// @Router       /api/ws/chat [get]
 func (h *Hub) ChatServer(c *gin.Context) {
 	jwtToken := c.Query("token")
 	claims, err := h.jwtProvider.VerifyJWT(jwtToken)
