@@ -591,7 +591,7 @@ psql -U gin -h localhost -d gin-todo
 - [ ] `internal/middleware/logger.go` - RequestLogger() 実装（リクエストID生成）
 
 ##### 15-2. CORS
-- [ ] `internal/middleware/cors.go` - CORS() 実装
+- [x] `internal/middleware/cors.go` - CORS() 実装
 
 ##### 15-3. CSRF
 - [ ] `internal/middleware/csrf.go` - CSRF() 実装
