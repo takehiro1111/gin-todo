@@ -105,13 +105,6 @@ func (h *Hub) Run() {
 // @Failure      401 {object} utils.ErrorResponse "認証エラー"
 // @Router       /api/ws/chat [get]
 func (h *Hub) ChatServer(c *gin.Context) {
-	jwtToken := c.Query("token")
-	claims, err := h.jwtProvider.VerifyJWT(jwtToken)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-		return
-	}
-
 	// HTTP → WebSocket へのプロトコルアップグレード設定
 	upgrader := websocket.Upgrader{
 		ReadBufferSize:  1024,
@@ -146,6 +139,21 @@ func (h *Hub) ChatServer(c *gin.Context) {
 		close(done)          // sendPeriodicPingのgoroutineを停止させる
 		h.unregister <- conn // Hubのclientsマップから削除する
 	}()
+
+	// Upgrade後、最初のメッセージでトークンを受け取る
+	_, tokenMsg, err := conn.ReadMessage()
+	if err != nil {
+		conn.Close()
+		return
+	}
+
+	claims, err := h.jwtProvider.VerifyJWT(string(tokenMsg))
+	if err != nil {
+		// Upgrade後はjsonを返せないため。
+		conn.WriteMessage(websocket.TextMessage, []byte(`{"error":"unauthorized"}`))
+		conn.Close()
+		return
+	}
 
 	// Hubにこのクライアントを登録し、ブロードキャスト配信の対象にする
 	h.register <- conn

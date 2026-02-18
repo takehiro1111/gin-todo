@@ -52,7 +52,7 @@ go mod tidy
 - 全タスク一覧
 
 ### WebSocket チャット
-- JWT認証付きリアルタイムチャット（クエリパラメータ `?token=xxx`）
+- JWT認証は FIrst Messsage方式で最初のメッセージからtokenを取得して認証する。
 - Hub パターンによるメッセージブロードキャスト
 - Ping/Pong による接続死活監視
 - オリジン検証（CheckOrigin）
