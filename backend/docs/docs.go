@@ -846,20 +846,11 @@ const docTemplate = `{
         },
         "/api/ws/chat": {
             "get": {
-                "description": "JWT認証付きのWebSocketチャットエンドポイント。クエリパラメータでJWTトークンを渡してHTTP接続をWebSocketにアップグレードする。接続後はリアルタイムでメッセージの送受信が可能。",
+                "description": "JWT認証付きのWebSocketチャットエンドポイント。接続後、最初のメッセージでJWTトークンを送信して認証する。認証成功後はリアルタイムでメッセージの送受信が可能。",
                 "tags": [
                     "websocket"
                 ],
                 "summary": "WebSocketチャット接続",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "JWTアクセストークン",
-                        "name": "token",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
                 "responses": {
                     "101": {
                         "description": "WebSocket接続確立",

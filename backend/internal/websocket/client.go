@@ -17,42 +17,53 @@ const (
 	// readTimeoutの90%に設定し、タイムアウト前に必ずPingが届くようにするため9で割っている。
 	pingPeriod = (readTimeout * 9) / 10
 
-	// writeWait はクライアントへの書き込み操作のタイムアウト。
-	// Ping送信やメッセージ送信時にSetWriteDeadlineで使用する。
+	// クライアントへの書き込み操作のタイムアウト。
 	writeWait = 10 * time.Second
+
+	// maxMessageSize はクライアントから受信するメッセージの最大サイズ（バイト）。
+	maxMessageSize = 4096
 )
 
 // Client はWebSocket接続を持つ個別のクライアントを表す。
-// 現在はHubが*websocket.Connを直接管理しているため未使用。
-// チャットルーム機能やユーザー情報の紐付け時に活用予定。
+// sendチャネルを介して書き込みをwritePumpに集約し、並行書き込みを防止する。
 type Client struct {
 	conn *websocket.Conn
+	send chan Message
 }
 
-// sendPeriodicPing はpingPeriod間隔でクライアントにPingメッセージを送信する。
-// クライアントはPingを受信すると自動的にPongを返し、PongHandlerでReadDeadlineが延長される。
-// 一定時間Pongが返ってこない場合はreadTimeout超過により接続が切断される。
-// doneチャネルがクローズされると、このgoroutineも終了する。
-func sendPeriodicPing(conn *websocket.Conn, timeProvider utils.TimeProvider, done chan struct{}) {
-	// pingPeriod間隔で発火するTickerを生成
+// writePump はsendチャネルとPingTickerを単一のgoroutineで処理し、
+// connへの書き込みを直列化する。各Clientにつき1つ起動される。
+// sendチャネルがクローズされるか、書き込みエラーが発生すると終了する。
+func (cl *Client) writePump(timeProvider utils.TimeProvider) {
 	pingTicker := time.NewTicker(pingPeriod)
 	defer func() {
 		pingTicker.Stop()
-		conn.Close()
+		cl.conn.Close()
 	}()
 
 	for {
 		select {
-		// 読み取り側が終了した場合、Ping送信も停止する
-		case <-done:
-			return
+		case message, ok := <-cl.send:
+			if !ok {
+				// Hubがsendチャネルを閉じた（unregisterまたはbroadcast時のバッファ満杯）
+				// 基盤となるネットワーク接続の書き込み期限を設定します。
+				cl.conn.SetWriteDeadline(timeProvider.Now().Add(writeWait))
+				cl.conn.WriteMessage(websocket.CloseMessage, []byte{})
+				return
+			}
 
-		// 定期的にPingを送信して接続の死活を確認する
-		case <-pingTicker.C:
-			conn.SetWriteDeadline(timeProvider.Now().Add(writeWait))
-			err := conn.WriteMessage(websocket.PingMessage, nil)
+			cl.conn.SetWriteDeadline(timeProvider.Now().Add(writeWait))
+			err := cl.conn.WriteMessage(message.Type, message.Message)
 			if err != nil {
-				log.Println("write:", err)
+				log.Printf("writePump WriteMessage error: %v", err)
+				return
+			}
+
+		case <-pingTicker.C:
+			cl.conn.SetWriteDeadline(timeProvider.Now().Add(writeWait))
+			err := cl.conn.WriteMessage(websocket.PingMessage, nil)
+			if err != nil {
+				log.Printf("writePump Ping error: %v", err)
 				return
 			}
 			log.Println("ping sent")

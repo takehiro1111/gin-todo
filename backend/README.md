@@ -52,7 +52,7 @@ go mod tidy
 - 全タスク一覧
 
 ### WebSocket チャット
-- JWT認証は FIrst Messsage方式で最初のメッセージからtokenを取得して認証する。
+- JWT認証は First Message方式で最初のメッセージからtokenを取得して認証する。
 - Hub パターンによるメッセージブロードキャスト
 - Ping/Pong による接続死活監視
 - オリジン検証（CheckOrigin）
@@ -126,7 +126,7 @@ gin-todo/
 │   │   │
 │   │   ├── websocket/      # WebSocketチャット
 │   │   │   ├── chat.go     # Hub構造体 + ChatServer + readAndBroadcast + Run
-│   │   │   └── client.go   # Client構造体 + sendPeriodicPing + 定数定義
+│   │   │   └── client.go   # Client構造体 + writePump + 定数定義
 │   │   │
 │   │   └── utils/          # ユーティリティ
 │   │       ├── jwt.go
@@ -283,8 +283,8 @@ npm run build
 - `GET /api/admin/users` - 全ユーザー一覧
 - `GET /api/admin/tasks` - 全タスク一覧
 
-### WebSocket (JWT認証: クエリパラメータ `?token=xxx`)
-- `GET /api/ws/chat?token=<JWT>` - リアルタイムチャット
+### WebSocket (JWT認証: First Message方式)
+- `GET /api/ws/chat` - リアルタイムチャット（接続後、最初のメッセージでJWTトークンを送信して認証）
 
 > [!NOTE]
 > リリース後にPhase2以降でメッセージのDB保存や履歴取得機能を実装したい。
@@ -382,7 +382,8 @@ curl -v -o export.csv \
   http://localhost:8080/api/tasks/export/csv
 
 # WebSocketチャット接続（wscat使用）
-wscat -c "ws://localhost:8080/api/ws/chat?token={access_token}"
+# 接続後、最初のメッセージでJWTトークンを送信して認証する
+wscat -c "ws://localhost:8080/api/ws/chat" --origin http://localhost:3000
 ```
 
 
@@ -583,13 +584,13 @@ psql -U gin -h localhost -d gin-todo
 #### 15. WebSocketチャット実装
 
 - [x] `internal/websocket/chat.go` - Hub 構造体定義（クライアント管理）
-- [x] `internal/websocket/chat.go` - NewHub() コンストラクタ（timeProvider, jwtProvider のDI）
+- [x] `internal/websocket/chat.go` - NewHub() コンストラクタ（timeProvider, jwtProvider, upgrader のDI）
 - [x] `internal/websocket/chat.go` - Run() メソッド実装（register/unregister/broadcast イベントループ）
 - [x] `internal/websocket/chat.go` - ChatServer() ハンドラ実装（JWT認証 + WebSocketアップグレード）
 - [x] `internal/websocket/chat.go` - readAndBroadcast() 実装（メッセージ読み取り + ユーザー名付きJSON配信）
 - [x] `internal/websocket/chat.go` - CheckOrigin によるオリジン検証
 - [x] `internal/websocket/client.go` - Client 構造体定義
-- [x] `internal/websocket/client.go` - sendPeriodicPing() 実装（Ping/Pong 死活監視）
+- [x] `internal/websocket/client.go` - writePump() 実装（メッセージ送信 + Ping/Pong 死活監視）
 - [x] `internal/routes/routes.go` - ルーティング追加 - GET /api/ws/chat
 - [x] `cmd/api/main.go` - Hub初期化 + `go wsHub.Run()` 起動
 ---
