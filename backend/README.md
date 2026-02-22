@@ -598,7 +598,7 @@ psql -U gin -h localhost -d gin-todo
 #### 16. 非機能要件（ミドルウェア）実装
 
 ##### 15-1. ロギング
-- [ ] `internal/middleware/logger.go` - RequestLogger() 実装（リクエストID生成）
+- [x] `internal/middleware/logger.go` - RequestLogger() 実装（リクエストID生成）
 
 ##### 15-2. CORS
 - [x] `internal/middleware/cors.go` - CORS() 実装
@@ -620,9 +620,6 @@ psql -U gin -h localhost -d gin-todo
 
 ##### 15-8. タイムアウト
 - [ ] `internal/middleware/timeout.go` - Timeout() 実装
-
-##### 15-9. ミドルウェア適用
-- [ ] `internal/routes/routes.go` - 全ミドルウェアを適用
 
 ---
 
