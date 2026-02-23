@@ -51,8 +51,11 @@ go mod tidy
 - 全ユーザー一覧
 - 全タスク一覧
 
-### リアルタイム通知
-- WebSocket によるタスク変更通知
+### WebSocket チャット
+- JWT認証は First Message方式で最初のメッセージからtokenを取得して認証する。
+- Hub パターンによるメッセージブロードキャスト
+- Ping/Pong による接続死活監視
+- オリジン検証（CheckOrigin）
 
 ### 非機能要件
 - リクエストログ (リクエストID付き)
@@ -121,10 +124,9 @@ gin-todo/
 │   │   │   ├── user_validator.go
 │   │   │   └── task_validator.go
 │   │   │
-│   │   ├── websocket/      # WebSocket管理
-│   │   │   ├── hub.go
-│   │   │   ├── client.go
-│   │   │   └── handler.go
+│   │   ├── websocket/      # WebSocketチャット
+│   │   │   ├── chat.go     # Hub構造体 + ChatServer + readAndBroadcast + Run
+│   │   │   └── client.go   # Client構造体 + writePump + 定数定義
 │   │   │
 │   │   └── utils/          # ユーティリティ
 │   │       ├── jwt.go
@@ -281,8 +283,11 @@ npm run build
 - `GET /api/admin/users` - 全ユーザー一覧
 - `GET /api/admin/tasks` - 全タスク一覧
 
-### WebSocket
-- `GET /api/ws/notifications` - リアルタイム通知
+### WebSocket (JWT認証: First Message方式)
+- `GET /api/ws/chat` - リアルタイムチャット（接続後、最初のメッセージでJWTトークンを送信して認証）
+
+> [!NOTE]
+> リリース後にPhase2以降でメッセージのDB保存や履歴取得機能を実装したい。
 
 ### その他
 - `GET /health` - ヘルスチェック
@@ -373,8 +378,12 @@ curl -X POST http://localhost:8080/api/auth/reset \
 
 # CSVエクスポート
 curl -v -o export.csv \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InRlc3QtdGFybyIsInVzZXJfaWQiOjE2LCJyb2xlIjoiYWRtaW4iLCJpc3MiOiJnaW4tdG9kby1hcGkiLCJzdWIiOiJ0ZXN0LXRhcm8iLCJleHAiOjE3NzA3ODMwNjMsIm5iZiI6MTc3MDc4MjE2MywiaWF0IjoxNzcwNzgyMTYzfQ.58714jokXD2xbQmi2buVL2nTCuhKUeS-M1oSWJX9icY" \
+  -H "Authorization: Bearer <ACCESS_TOKEN>" \
   http://localhost:8080/api/tasks/export/csv
+
+# WebSocketチャット接続（wscat使用）
+# 接続後、最初のメッセージでJWTトークンを送信して認証する
+wscat -c "ws://localhost:8080/api/ws/chat" --origin http://localhost:3000
 ```
 
 
@@ -572,17 +581,18 @@ psql -U gin -h localhost -d gin-todo
 
 ---
 
-#### 15. WebSocket通知実装
+#### 15. WebSocketチャット実装
 
-- [ ] `internal/websocket/client.go` - Client 構造体定義
-- [ ] `internal/websocket/hub.go` - Hub 構造体定義（クライアント管理）
-- [ ] `internal/websocket/hub.go` - Run() メソッド実装
-- [ ] `internal/websocket/hub.go` - Broadcast() メソッド実装
-- [ ] `internal/websocket/handler.go` - ServeWS() ハンドラ実装
-- [ ] `internal/services/notification_service.go` - NotificationService 実装
-- [ ] TaskService に通知処理追加（Create/Update/Delete時）
-- [ ] ルーティング追加 - GET /api/ws/notifications
-
+- [x] `internal/websocket/chat.go` - Hub 構造体定義（クライアント管理）
+- [x] `internal/websocket/chat.go` - NewHub() コンストラクタ（timeProvider, jwtProvider, upgrader のDI）
+- [x] `internal/websocket/chat.go` - Run() メソッド実装（register/unregister/broadcast イベントループ）
+- [x] `internal/websocket/chat.go` - ChatServer() ハンドラ実装（JWT認証 + WebSocketアップグレード）
+- [x] `internal/websocket/chat.go` - readAndBroadcast() 実装（メッセージ読み取り + ユーザー名付きJSON配信）
+- [x] `internal/websocket/chat.go` - CheckOrigin によるオリジン検証
+- [x] `internal/websocket/client.go` - Client 構造体定義
+- [x] `internal/websocket/client.go` - writePump() 実装（メッセージ送信 + Ping/Pong 死活監視）
+- [x] `internal/routes/routes.go` - ルーティング追加 - GET /api/ws/chat
+- [x] `cmd/api/main.go` - Hub初期化 + `go wsHub.Run()` 起動
 ---
 
 #### 16. 非機能要件（ミドルウェア）実装

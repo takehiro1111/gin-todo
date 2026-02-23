@@ -12,6 +12,7 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	gorillaWs "github.com/gorilla/websocket"
 
 	"github.com/takehiro1111/gin-todo/backend/infrastructure/aws"
 	"github.com/takehiro1111/gin-todo/backend/internal/controllers"
@@ -20,6 +21,7 @@ import (
 	"github.com/takehiro1111/gin-todo/backend/internal/routes"
 	"github.com/takehiro1111/gin-todo/backend/internal/services"
 	"github.com/takehiro1111/gin-todo/backend/internal/utils"
+	"github.com/takehiro1111/gin-todo/backend/internal/websocket"
 )
 
 // @title           Gin Todo API
@@ -159,7 +161,26 @@ func main() {
 	taskCtrl := controllers.NewTaskControllerImpl(taskService, timeProvider)
 	exportCtrl := controllers.NewExportControllerImpl(taskService, timeProvider)
 
-	routes.SetupRoutes(r, adminCtrl, authCtrl, taskCtrl, exportCtrl, jwtProvider)
+	wsHub := websocket.NewHub(timeProvider, jwtProvider, gorillaWs.Upgrader{
+		ReadBufferSize:  1024,
+		WriteBufferSize: 1024,
+		CheckOrigin: func(r *http.Request) bool {
+			origin := r.Header.Get("Origin")
+
+			allowedOrigins := []string{
+				"http://localhost:3000",
+			}
+			for _, allowed := range allowedOrigins {
+				if origin == allowed {
+					return true
+				}
+			}
+			return false
+		},
+	})
+	go wsHub.Run()
+
+	routes.SetupRoutes(r, adminCtrl, authCtrl, taskCtrl, exportCtrl, jwtProvider, wsHub)
 
 	srv := &http.Server{
 		Addr:    ":8080",
