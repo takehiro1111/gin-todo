@@ -1,6 +1,8 @@
 package routes
 
 import (
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -9,7 +11,6 @@ import (
 	"github.com/takehiro1111/gin-todo/backend/internal/middleware"
 	"github.com/takehiro1111/gin-todo/backend/internal/utils"
 	"github.com/takehiro1111/gin-todo/backend/internal/websocket"
-	"net/http"
 )
 
 // main関数をシンプルにするため。
@@ -20,6 +21,9 @@ func SetupRoutes(r *gin.Engine, adminCtrl controllers.AdminController, authCtrl 
 	api := r.Group("/api")
 	{
 		api.GET("/health", HealthCheck)
+		// api.GET("/panic-test", func(c *gin.Context) {
+		// 	panic("test panic for recovery middleware")
+		// })
 	}
 
 	admin := r.Group("/api/admin")
