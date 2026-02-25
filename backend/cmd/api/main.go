@@ -46,8 +46,6 @@ import (
 func main() {
 	r := gin.New()
 
-	r.Use(gin.Recovery())
-
 	loggerConfig := middleware.NewLoggerConfig(
 		"info",
 		"json",
@@ -56,6 +54,7 @@ func main() {
 		middleware.WithEnableRequestBody(true),
 	)
 	r.Use(middleware.LoggerMiddleware(loggerConfig))
+	r.Use(middleware.CustomRecover(loggerConfig))
 
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"http://localhost:3000"},

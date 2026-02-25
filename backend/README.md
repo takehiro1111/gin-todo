@@ -616,7 +616,7 @@ psql -U gin -h localhost -d gin-todo
 - [ ] `internal/middleware/gzip.go` - GZIP() 実装（またはgin-gzip使用）
 
 ##### 15-7. Recovery
-- [ ] `internal/middleware/recovery.go` - Recovery() 実装
+- [x] `internal/middleware/recovery.go` - Recovery() 実装
 
 ##### 15-8. タイムアウト
 - [ ] `internal/middleware/timeout.go` - Timeout() 実装
