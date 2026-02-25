@@ -16,6 +16,7 @@ import (
 
 	"github.com/takehiro1111/gin-todo/backend/infrastructure/aws"
 	"github.com/takehiro1111/gin-todo/backend/internal/controllers"
+	"github.com/takehiro1111/gin-todo/backend/internal/middleware"
 	"github.com/takehiro1111/gin-todo/backend/internal/models"
 	"github.com/takehiro1111/gin-todo/backend/internal/repositories"
 	"github.com/takehiro1111/gin-todo/backend/internal/routes"
@@ -43,8 +44,18 @@ import (
 // @name Authorization
 // @description Type "Bearer" followed by a space and JWT token.
 func main() {
-	// 開発時はDefaultで良いが、本番はNewでカスタムのミドルウェアを適用する。
-	r := gin.Default()
+	r := gin.New()
+
+	r.Use(gin.Recovery())
+
+	loggerConfig := middleware.NewLoggerConfig(
+		"info",
+		"json",
+		middleware.WithTimeFunc(time.Now),
+		middleware.WithWriter(os.Stdout),
+		middleware.WithEnableRequestBody(true),
+	)
+	r.Use(middleware.LoggerMiddleware(loggerConfig))
 
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"http://localhost:3000"},
