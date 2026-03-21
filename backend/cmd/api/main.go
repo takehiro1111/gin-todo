@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/gin-contrib/cors"
+	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
 	gorillaWs "github.com/gorilla/websocket"
 
@@ -65,6 +66,8 @@ func main() {
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,
 	}))
+
+	r.Use(gzip.Gzip(gzip.DefaultCompression, gzip.WithExcludedPathsRegexs([]string{"/api/health"})))
 
 	// フィールドを持たないのでファクトリーメソッドは実装してない
 	uuidGenerator := &utils.UUIDGeneratorImpl{}

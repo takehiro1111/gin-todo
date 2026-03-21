@@ -613,7 +613,7 @@ psql -U gin -h localhost -d gin-todo
 - [ ] `internal/middleware/security_headers.go` - SecurityHeaders() 実装
 
 ##### 15-6. GZIP圧縮
-- [ ] `internal/middleware/gzip.go` - GZIP() 実装（またはgin-gzip使用）
+- [x] `internal/middleware/gzip.go` - GZIP() 実装（またはgin-gzip使用）
 
 ##### 15-7. Recovery
 - [x] `internal/middleware/recovery.go` - Recovery() 実装
