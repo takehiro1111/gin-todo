@@ -47,6 +47,7 @@ import (
 func main() {
 	r := gin.New()
 
+	r.Use(middleware.SetSecurityResponseHeader())
 	loggerConfig := middleware.NewLoggerConfig(
 		"info",
 		"json",
