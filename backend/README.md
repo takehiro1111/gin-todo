@@ -81,11 +81,11 @@ Middleware（認証・ログ・レート制限など）
     ↓
 Controller（リクエスト/レスポンス変換 / バリデーション）
     ↓
-Service（ビジネスロジックの検証）
+Service（ビジネスロジック）
     ↓
 Repository（DBアクセス抽象化）
     ↓
-Model（DB定義・マイグレーション）
+Model（GORMモデル定義・リレーション・DB接続）
 ```
 
 ### ディレクトリ構成
@@ -243,24 +243,55 @@ npm run format
 ## データモデル
 
 ### User
-- `id` (bigserial, PK)
-- `email` (varchar, unique)
-- `password_hash` (varchar)
-- `name` (varchar)
-- `role` (varchar: admin/writer/viewer)
+- `id` (bigint, PK)
+- `name` (varchar(100), not null)
+- `email` (varchar(100), unique, not null)
+- `password_hash` (varchar(500), not null)
+- `role_id` (bigint, FK → user_roles.id, default: 1)
 - `created_at` (timestamp)
 - `updated_at` (timestamp)
+- `deleted_at` (timestamp, soft delete)
 
 ### Task
-- `id` (bigserial, PK)
-- `user_id` (bigint, FK)
-- `title` (varchar)
+- `id` (bigint, PK)
+- `user_id` (bigint, FK → users.id, CASCADE)
+- `title` (varchar(200), not null)
 - `description` (text)
-- `status` (varchar: todo/in_progress/done)
-- `priority` (varchar: low/medium/high)
-- `due_date` (timestamp)
+- `status_id` (bigint, FK → task_statuses.id, CASCADE)
+- `priority` (varchar, not null, default: medium)
+- `due_date` (timestamp, nullable)
 - `created_at` (timestamp)
 - `updated_at` (timestamp)
+- `deleted_at` (timestamp, soft delete)
+
+### UserRole
+- `id` (bigint, PK)
+- `name` (varchar(30), not null)
+- `display_order` (int, not null)
+- `is_active` (boolean, not null, default: true)
+- `created_at` (timestamp)
+- `updated_at` (timestamp)
+- `deleted_at` (timestamp, soft delete)
+
+### TaskStatus
+- `id` (bigint, PK)
+- `name` (varchar(30), unique, not null)
+- `description` (varchar(50), not null)
+- `display_order` (int, not null)
+- `is_active` (boolean, not null, default: true)
+- `created_at` (timestamp)
+- `updated_at` (timestamp)
+- `deleted_at` (timestamp, soft delete)
+
+### PasswordResetToken
+- `id` (bigint, PK)
+- `user_id` (bigint, FK → users.id)
+- `reset_token` (varchar(1000), unique, not null)
+- `expires_at` (timestamp, not null)
+- `used_at` (timestamp, nullable)
+- `created_at` (timestamp)
+- `updated_at` (timestamp)
+- `deleted_at` (timestamp, soft delete)
 
 ## Reference
 https://gin-gonic.com/ja/docs/
