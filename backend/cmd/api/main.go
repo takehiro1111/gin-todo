@@ -59,6 +59,9 @@ func main() {
 	r.Use(middleware.CustomRecover(loggerConfig))
 	r.Use(middleware.TimeoutMiddleware(5*time.Second, loggerConfig))
 
+	middleware.StartCleanup()
+	r.Use(middleware.RateLimit())
+
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"http://localhost:3000"},
 		AllowMethods:     []string{"GET", "PUT", "POST", "DELETE", "PATCH", "OPTIONS"},
