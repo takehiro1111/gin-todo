@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/takehiro1111/gin-todo/backend/internal/utils"
@@ -29,12 +30,22 @@ func (g *CSRFUUIDProvider) VerifyCSRFToken(c *gin.Context) {
 
 	cookie, err := c.Cookie("csrf_token")
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "failed get cookie"})
+		c.AbortWithStatusJSON(http.StatusForbidden, utils.ErrorResponse{
+			Success:   false,
+			Message:   "forbidden",
+			Error:     "failed get cookie",
+			Timestamp: time.Now(),
+		})
 		return
 	}
 
 	if tokenHeaderCSRF != cookie {
-		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "csrf"})
+		c.AbortWithStatusJSON(http.StatusForbidden, utils.ErrorResponse{
+			Success:   false,
+			Message:   "forbidden",
+			Error:     "csrf token mismatch",
+			Timestamp: time.Now(),
+		})
 		return
 	}
 

@@ -67,146 +67,65 @@ go mod tidy
 - Graceful Shutdown
 - ヘルスチェック
 
-## ディレクトリ構成
-### ディレクトリ構成イメージ
+## アーキテクチャ
+
+### 設計方針
+
+レイヤードアーキテクチャを採用し、各層の責務を明確に分離することで、テスタビリティと保守性を高める。
+依存関係はインターフェースを介して注入（DI）し、外部サービスへの依存を抽象化する。
+
 ```
-gin-todo/
-├── .git/
-├── .github/
-│   └── workflows/          # CI/CD設定
-├── .gitignore
-├── README.md
-│
-├── backend/                # Go (Gin) API
-│   ├── cmd/
-│   │   └── api/
-│   │       └── main.go     # エントリーポイント
-│   │
-│   ├── internal/           # プライベートコード
-│   │   ├── config/         # 設定管理
-│   │   │   └── config.go
-│   │   │
-│   │   ├── models/         # データモデル (Model)
-│   │   │   ├── user.go
-│   │   │   ├── task.go
-│   │   │   └── db.go
-│   │   │
-│   │   ├── controllers/    # ハンドラー (Controller)
-│   │   │   ├── auth_controller.go
-│   │   │   ├── task_controller.go
-│   │   │   ├── admin_controller.go
-│   │   │   └── export_controller.go
-│   │   │
-│   │   ├── services/       # ビジネスロジック
-│   │   │   ├── auth_service.go
-│   │   │   ├── task_service.go
-│   │   │   ├── user_service.go
-│   │   │   └── notification_service.go
-│   │   │
-│   │   ├── repositories/   # データアクセス層
-│   │   │   ├── user_repository.go
-│   │   │   └── task_repository.go
-│   │   │
-│   │   ├── middleware/     # ミドルウェア
-│   │   │   ├── auth.go
-│   │   │   ├── cors.go
-│   │   │   ├── csrf.go
-│   │   │   ├── rate_limit.go
-│   │   │   ├── logger.go
-│   │   │   ├── recovery.go
-│   │   │   ├── security_headers.go
-│   │   │   └── timeout.go
-│   │   │
-│   │   ├── routes/         # ルーティング設定
-│   │   │   └── routes.go
-│   │   │
-│   │   ├── validators/     # バリデーション
-│   │   │   ├── user_validator.go
-│   │   │   └── task_validator.go
-│   │   │
-│   │   ├── websocket/      # WebSocketチャット
-│   │   │   ├── chat.go     # Hub構造体 + ChatServer + readAndBroadcast + Run
-│   │   │   └── client.go   # Client構造体 + writePump + 定数定義
-│   │   │
-│   │   └── utils/          # ユーティリティ
-│   │       ├── jwt.go
-│   │       ├── response.go
-│   │       └── password.go
-│   │
-│   ├── migrations/         # DBマイグレーション
-│   │   ├── 001_create_users.sql
-│   │   └── 002_create_tasks.sql
-│   │
-│   ├── tests/              # テストコード
-│   │   ├── integration/
-│   │   └── unit/
-│   │
-│   ├── .air.toml           # ホットリロード設定
-│   ├── .env.example
-│   ├── .env
-│   ├── go.mod
-│   └── go.sum
-│
-└── frontend/               # React SPA
-    ├── public/
-    │   └── index.html
-    │
-    ├── src/
-    │   ├── api/            # APIクライアント
-    │   │   ├── auth.ts
-    │   │   ├── tasks.ts
-    │   │   └── client.ts
-    │   │
-    │   ├── components/     # 再利用可能なコンポーネント (View)
-    │   │   ├── common/
-    │   │   │   ├── Button.tsx
-    │   │   │   ├── Input.tsx
-    │   │   │   └── Modal.tsx
-    │   │   ├── tasks/
-    │   │   │   ├── TaskList.tsx
-    │   │   │   ├── TaskItem.tsx
-    │   │   │   └── TaskForm.tsx
-    │   │   └── auth/
-    │   │       ├── LoginForm.tsx
-    │   │       └── RegisterForm.tsx
-    │   │
-    │   ├── pages/          # ページコンポーネント
-    │   │   ├── Login.tsx
-    │   │   ├── Register.tsx
-    │   │   ├── TaskList.tsx
-    │   │   ├── TaskDetail.tsx
-    │   │   └── AdminDashboard.tsx
-    │   │
-    │   ├── hooks/          # カスタムフック
-    │   │   ├── useAuth.ts
-    │   │   ├── useTasks.ts
-    │   │   └── useWebSocket.ts
-    │   │
-    │   ├── context/        # 状態管理 (Model)
-    │   │   ├── AuthContext.tsx
-    │   │   └── TaskContext.tsx
-    │   │
-    │   ├── types/          # TypeScript型定義
-    │   │   ├── user.ts
-    │   │   └── task.ts
-    │   │
-    │   ├── utils/          # ユーティリティ
-    │   │   ├── formatDate.ts
-    │   │   └── validation.ts
-    │   │
-    │   ├── routes/         # ルーティング
-    │   │   └── AppRoutes.tsx
-    │   │
-    │   ├── App.tsx
-    │   ├── index.tsx
-    │   └── index.css
-    │
-    ├── .env.example
-    ├── .env
-    ├── package.json
-    ├── tsconfig.json
-    └── vite.config.ts      # or webpack.config.js
+リクエスト
+    ↓
+Middleware（認証・ログ・レート制限など）
+    ↓
+Controller（リクエスト/レスポンス変換 / バリデーション）
+    ↓
+Service（ビジネスロジックの検証）
+    ↓
+Repository（DBアクセス抽象化）
+    ↓
+Model（DB定義・マイグレーション）
 ```
+
+### ディレクトリ構成
+
+```
+backend/
+├── cmd/
+│   └── api/
+│       └── main.go             # エントリーポイント。DIコンテナとして各層を組み立てる
+├── infrastructure/
+│   └── aws/                    # AWS SDK クライアント（SSM・SES）の初期化
+├── internal/
+│   ├── config/                 # 設定値の読み込み
+│   ├── controllers/            # HTTPハンドラ。リクエストのバインド・バリデーション・レスポンス整形
+│   ├── errors/                 # ドメインエラー定義
+│   ├── middleware/             # Ginミドルウェア（認証・ログ・CSRF・タイムアウト・レート制限など）
+│   ├── models/                 # GORMモデル定義・DB接続・マイグレーション実行
+│   ├── repositories/           # DBアクセス層。Serviceからの依存をインターフェースで抽象化
+│   ├── routes/                 # ルーティング定義。404/405ハンドラも含む
+│   ├── services/               # ビジネスロジック層。外部サービス（AWS等）との連携もここ
+│   ├── utils/                  # 共通ユーティリティ（JWT・UUID・レスポンス形式・時刻など）
+│   ├── validators/             # カスタムバリデーションルール
+│   └── websocket/              # WebSocket Hub・クライアント管理
+├── migrations/                 # SQLマイグレーションファイル
+├── seeds/                      # 開発用シードデータ
+└── tests/
+    ├── integration/            # 統合テスト
+    └── unit/                   # ユニットテスト
+```
+
+### 依存関係の方向
+
+```
+controllers → services → repositories → models
+     ↓              ↓
+   utils          utils / infrastructure
+```
+
+- 上位層は下位層のインターフェースにのみ依存し、実装には依存しない
+- `main.go` で具体実装をインターフェースに注入する
 
 ## セットアップ
 
@@ -623,17 +542,7 @@ psql -U gin -h localhost -d gin-todo
 
 ---
 
-#### 16. エラーハンドリング強化
-- [ ] 403ハンドラ設定、改善（他ユーザーの権限エラー時など）
-- [ ] 404ハンドラ設定
-- [ ] 405ハンドラ設定
-- [ ] 統一エラーレスポンス形式確認
-
 ---
-
-#### 17.書けてないテスト実装
-- Unit
-- API Integration
 
 # Swagger参考
 https://github.com/swaggo/swag#mime-types
