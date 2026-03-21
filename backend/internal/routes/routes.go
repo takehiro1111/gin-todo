@@ -15,7 +15,7 @@ import (
 )
 
 // main関数をシンプルにするため。
-func SetupRoutes(r *gin.Engine, adminCtrl controllers.AdminController, authCtrl controllers.AuthController, taskCtrl controllers.TaskController, exportCtrl controllers.ExportController, jwtProvider utils.JWTProvider, wsHub *websocket.Hub) {
+func SetupRoutes(r *gin.Engine, adminCtrl controllers.AdminController, authCtrl controllers.AuthController, taskCtrl controllers.TaskController, exportCtrl controllers.ExportController, jwtProvider utils.JWTProvider, wsHub *websocket.Hub, csrfProvider *middleware.CSRFUUIDProvider) {
 	// Swagger UI
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
@@ -51,10 +51,12 @@ func SetupRoutes(r *gin.Engine, adminCtrl controllers.AdminController, authCtrl 
 		authProtected.POST("/refresh", authCtrl.RefreshToken)
 		authProtected.GET("/me", authCtrl.GetMe)
 		authProtected.PATCH("/password", authCtrl.ChangePassword)
+		authProtected.GET("/csrf-token", csrfProvider.GenerateCSRFToken)
 	}
 
 	apiTask := r.Group("/api/task")
 	apiTask.Use(middleware.VerifyUser(jwtProvider))
+	apiTask.Use(csrfProvider.VerifyCSRFToken)
 	{
 		apiTask.GET("/", taskCtrl.GetTasks)
 		apiTask.POST("/", taskCtrl.CreateTask)

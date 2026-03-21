@@ -10,3 +10,4 @@
 **/.env
 **/local/main
 backend/api
+**/cookies.txt

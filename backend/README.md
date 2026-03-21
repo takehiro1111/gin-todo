@@ -604,7 +604,7 @@ psql -U gin -h localhost -d gin-todo
 - [x] `internal/middleware/cors.go` - CORS() 実装
 
 ##### 15-3. CSRF
-- [ ] `internal/middleware/csrf.go` - CSRF() 実装
+- [x] `internal/middleware/csrf.go` - CSRF() 実装
 
 ##### 15-4. Rate Limiting
 - [ ] `internal/middleware/rate_limit.go` - RateLimit() 実装（IP単位）
@@ -808,3 +808,11 @@ curl -X PATCH http://localhost:8080/api/task/1 \
 curl -X DELETE http://localhost:8080/api/task/1 \
   -H 'Authorization: Bearer <ACCESS_TOKEN>'
 ```
+
+
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InRlc3QtdGFybyIsInVzZXJfaWQiOjE2LCJyb2xlIjoiYWRtaW4iLCJpc3MiOiJnaW4tdG9kby1hcGkiLCJzdWIiOiJ0ZXN0LXRhcm8iLCJleHAiOjE3NzQwNzYyNzEsIm5iZiI6MTc3NDA3NTM3MSwiaWF0IjoxNzc0MDc1MzcxfQ.7BjJZKF6RZl6qv6lzHsf0ZeGrABSy6DLV4vzXfcWee4
+
+CSRF=$(curl -s -c cookies.txt \
+  -H "Authorization: Bearer $TOKEN" \
+  http://localhost:8080/api/auth/csrf-token \
+  | jq -r '.token')
