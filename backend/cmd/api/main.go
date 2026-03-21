@@ -55,6 +55,7 @@ func main() {
 	)
 	r.Use(middleware.LoggerMiddleware(loggerConfig))
 	r.Use(middleware.CustomRecover(loggerConfig))
+	r.Use(middleware.TimeoutMiddleware(5*time.Second, loggerConfig))
 
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"http://localhost:3000"},
