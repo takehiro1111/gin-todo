@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/takehiro1111/gin-todo/backend/internal/utils"
 	"golang.org/x/time/rate"
 )
 
@@ -142,7 +143,12 @@ func RateLimit() gin.HandlerFunc {
 			var err error
 			ip, _, err = net.SplitHostPort(c.Request.RemoteAddr)
 			if err != nil {
-				c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": ErrMsgBadRequest})
+				c.AbortWithStatusJSON(http.StatusBadRequest, utils.ErrorResponse{
+					Success:   false,
+					Message:   "bad request",
+					Error:     ErrMsgBadRequest,
+					Timestamp: time.Now(),
+				})
 				return
 			}
 		}
@@ -153,7 +159,12 @@ func RateLimit() gin.HandlerFunc {
 			// クライアントに再試行可能な時間を通知するためヘッダーを設定。
 			c.Header("Retry-After", "60")
 			log.Printf("Rate limit exceeded for IP: %s\n", ip)
-			c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{"error": ErrMsgTooManyRequest})
+			c.AbortWithStatusJSON(http.StatusTooManyRequests, utils.ErrorResponse{
+				Success:   false,
+				Message:   "too many requests",
+				Error:     ErrMsgTooManyRequest,
+				Timestamp: time.Now(),
+			})
 			return
 		}
 

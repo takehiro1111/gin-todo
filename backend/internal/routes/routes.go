@@ -77,6 +77,22 @@ func SetupRoutes(r *gin.Engine, adminCtrl controllers.AdminController, authCtrl 
 		ws.GET("/chat", wsHub.ChatServer)
 	}
 
+	r.NoRoute(func(c *gin.Context) {
+		c.JSON(http.StatusNotFound, utils.ErrorResponse{
+			Success:   false,
+			Message:   "endpoint not found",
+			Timestamp: time.Now(),
+		})
+	})
+
+	r.NoMethod(func(c *gin.Context) {
+		c.JSON(http.StatusMethodNotAllowed, utils.ErrorResponse{
+			Success:   false,
+			Message:   "method not allowed",
+			Timestamp: time.Now(),
+		})
+	})
+
 	// デバッグ用：削除すること
 	r.GET("/debug/slow", func(c *gin.Context) {
 		time.Sleep(10 * time.Second)
