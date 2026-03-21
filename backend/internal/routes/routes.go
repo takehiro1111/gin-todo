@@ -92,12 +92,6 @@ func SetupRoutes(r *gin.Engine, adminCtrl controllers.AdminController, authCtrl 
 			Timestamp: time.Now(),
 		})
 	})
-
-	// デバッグ用：削除すること
-	r.GET("/debug/slow", func(c *gin.Context) {
-		time.Sleep(10 * time.Second)
-		c.JSON(http.StatusOK, gin.H{"status": "ok"})
-	})
 }
 
 // HealthCheck godoc
