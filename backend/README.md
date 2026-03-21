@@ -607,7 +607,7 @@ psql -U gin -h localhost -d gin-todo
 - [x] `internal/middleware/csrf.go` - CSRF() 実装
 
 ##### 15-4. Rate Limiting
-- [ ] `internal/middleware/rate_limit.go` - RateLimit() 実装（IP単位）
+- [x] `internal/middleware/rate_limit.go` - RateLimit() 実装（IP単位）
 
 ##### 15-5. セキュリティヘッダー
 - [x] `internal/middleware/security_headers.go` - SecurityHeaders() 実装
@@ -807,4 +807,29 @@ curl -X PATCH http://localhost:8080/api/task/1 \
 ```bash
 curl -X DELETE http://localhost:8080/api/task/1 \
   -H 'Authorization: Bearer <ACCESS_TOKEN>'
+```
+
+### RateLimit検証
+```zsh
+# 10回以降のリクエストでエラーになる
+for i in $(seq 1 15); do                             ─╯
+  echo -n "Request $i: "
+  curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/api/health
+  echo
+done
+Request 1: 200
+Request 2: 200
+Request 3: 200
+Request 4: 200
+Request 5: 200
+Request 6: 200
+Request 7: 200
+Request 8: 200
+Request 9: 200
+Request 10: 200
+Request 11: 429
+Request 12: 429
+Request 13: 429
+Request 14: 429
+Request 15: 429
 ```
