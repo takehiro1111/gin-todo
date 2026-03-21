@@ -604,7 +604,7 @@ psql -U gin -h localhost -d gin-todo
 - [x] `internal/middleware/cors.go` - CORS() 実装
 
 ##### 15-3. CSRF
-- [ ] `internal/middleware/csrf.go` - CSRF() 実装
+- [x] `internal/middleware/csrf.go` - CSRF() 実装
 
 ##### 15-4. Rate Limiting
 - [ ] `internal/middleware/rate_limit.go` - RateLimit() 実装（IP単位）

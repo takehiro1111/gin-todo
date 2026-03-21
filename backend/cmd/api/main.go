@@ -66,6 +66,11 @@ func main() {
 		MaxAge:           12 * time.Hour,
 	}))
 
+	// フィールドを持たないのでファクトリーメソッドは実装してない
+	uuidGenerator := &utils.UUIDGeneratorImpl{}
+
+	csrfTokenProvider := middleware.NewCSRFUUIDProvider(uuidGenerator)
+
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
 	defer stop()
 
@@ -133,9 +138,6 @@ func main() {
 	passwordResetTokenRepo := repositories.NewPasswordResetTokenRepository(db)
 	taskRepo := repositories.NewTaskRepository(db)
 
-	// フィールドを持たないのでファクトリーメソッドは実装してない
-	uuidGenerator := &utils.UUIDGeneratorImpl{}
-
 	accessTokenTTL := time.Minute * 15
 	refreshTokenTTL := time.Hour * 24 * 7
 	issuer := "gin-todo-api"
@@ -191,7 +193,7 @@ func main() {
 	})
 	go wsHub.Run()
 
-	routes.SetupRoutes(r, adminCtrl, authCtrl, taskCtrl, exportCtrl, jwtProvider, wsHub)
+	routes.SetupRoutes(r, adminCtrl, authCtrl, taskCtrl, exportCtrl, jwtProvider, wsHub, csrfTokenProvider)
 
 	srv := &http.Server{
 		Addr:    ":8080",
