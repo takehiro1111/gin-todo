@@ -610,7 +610,7 @@ psql -U gin -h localhost -d gin-todo
 - [ ] `internal/middleware/rate_limit.go` - RateLimit() 実装（IP単位）
 
 ##### 15-5. セキュリティヘッダー
-- [ ] `internal/middleware/security_headers.go` - SecurityHeaders() 実装
+- [x] `internal/middleware/security_headers.go` - SecurityHeaders() 実装
 
 ##### 15-6. GZIP圧縮
 - [x] `internal/middleware/gzip.go` - GZIP() 実装（またはgin-gzip使用）
