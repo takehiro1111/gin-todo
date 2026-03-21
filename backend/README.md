@@ -619,7 +619,7 @@ psql -U gin -h localhost -d gin-todo
 - [x] `internal/middleware/recovery.go` - Recovery() 実装
 
 ##### 15-8. タイムアウト
-- [ ] `internal/middleware/timeout.go` - Timeout() 実装
+- [x] `internal/middleware/timeout.go` - Timeout() 実装
 
 ---
 
