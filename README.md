@@ -1,11 +1,12 @@
 # Gin Todo API
+- タスク管理API（Go + Gin + React）のフルスタックアプリケーション
 
-タスク管理API（Go + Gin + React）のフルスタックアプリケーション
+## 目的
+- Go言語の基礎的な実装力の向上
 
 ## 技術スタック
 
-### Backend(概ね実装済み)
-
+### Backend(実装済み)
 - Go
 - Gin Web Framework
 - PostgreSQL
@@ -13,12 +14,11 @@
 - golang-migrate (DBマイグレーション)
 - JWT認証 (Access Token + Refresh Token)
 - WebSocket (リアルタイム通知)
-- AWS SDK v2 (SSM)
+- AWS SDK v2 (SSM ParameterStore / SES)
 - Swagger / OpenAPI (swaggo)
 - Air (ホットリロード)
 
-### Frontend(未実装)
-
+### Frontend(Claude Codeを使用したバイブコーディングで実装済み)
 - React
 - TypeScript
 - Vite
@@ -26,7 +26,6 @@
 - Context API (状態管理)
 
 ### Infra(未実装 / バックエンドに必要なリソースを一部設定)
-
 - AWS
   - VPC
   - Subnet
@@ -43,5 +42,4 @@
   - CDK with TypeScript
 
 ### CI/CD(未実装)
-
 - Github Actions
