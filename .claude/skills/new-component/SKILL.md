@@ -15,15 +15,22 @@ description: React コンポーネントの雛形を生成する。引数にコ�
 ### 1. `frontend/src/components/<Name>/<Name>.tsx`
 
 ```tsx
-interface Props {}
-
-export function <Name>({}: Props) {
+export function <Name>() {
   return <div></div>
 }
 ```
 
 - named export を使う (`export default` 禁止)
-- `interface Props` を定義する (空でもよい)
+- Props は `interface Props` ではなく関数の引数に直接型を埋め込む
+  ```tsx
+  // Good
+  export function TaskCard({ title, done }: { title: string; done: boolean }) { ... }
+
+  // Bad
+  interface Props { title: string; done: boolean }
+  export function TaskCard({ title, done }: Props) { ... }
+  ```
+- Props がない場合は引数なしでよい
 - .claude/rules/frontend-components.md の規約に従う
 
 ### 2. `frontend/src/components/<Name>/index.ts`

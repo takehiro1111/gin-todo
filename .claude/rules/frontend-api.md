@@ -6,13 +6,20 @@ paths:
 
 # API Communication Rules
 
-## API クライアント構成
+## 基本方針
 
-`src/api/` に機能単位でファイルを分割する。
+- 非同期処理は **async/await** を使う (Promise チェーンは使わない)
+- エラーハンドリングは **try/catch** で行う
+- HTTP クライアントは **axios**
+- サーバー状態のキャッシュ・取得は **TanStack Query**
+
+---
+
+## API クライアント構成
 
 ```
 api/
-├── client.ts     # fetch wrapper (共通ヘッダー、エラーハンドリング、リトライ)
+├── client.ts     # axios インスタンス (共通設定・インターセプター)
 ├── authApi.ts
 ├── taskApi.ts
 └── adminApi.ts
@@ -20,168 +27,232 @@ api/
 
 ---
 
+## client.ts (axios)
+
+```typescript
+import axios from 'axios'
+import { tokenStorage } from '@/utils/tokenStorage'
+
+export const apiClient = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE_URL,
+  withCredentials: true,  // csrf_token Cookie の送受信に必須
+  headers: { 'Content-Type': 'application/json' },
+})
+
+// リクエストインターセプター: Access Token を自動付与
+apiClient.interceptors.request.use((config) => {
+  const token = tokenStorage.getAccess()
+  if (token) config.headers.Authorization = `Bearer ${token}`
+  return config
+})
+
+// レスポンスインターセプター: 401 時にリフレッシュして再試行
+apiClient.interceptors.response.use(
+  (res) => res,
+  async (error) => {
+    const original = error.config
+
+    // 401 かつ未リトライの場合のみリフレッシュを試みる (無限ループ防止)
+    if (error.response?.status === 401 && !original._retry) {
+      original._retry = true
+      try {
+        const refreshToken = tokenStorage.getRefresh()
+        const { data } = await axios.post('/api/auth/refresh', { refresh_token: refreshToken })
+        tokenStorage.setAccess(data.data)
+        original.headers.Authorization = `Bearer ${data.data}`
+        return apiClient(original)
+      } catch {
+        // リフレッシュ失敗 → ログアウト
+        tokenStorage.clear()
+        window.location.href = '/login'
+      }
+    }
+
+    return Promise.reject(error)
+  }
+)
+```
+
+---
+
 ## Token 管理
 
-| Token | 保存場所 | 有効期限 | 補足 |
-|-------|---------|---------|------|
-| Access Token | `localStorage` | 15分 | ボディで返却 |
-| Refresh Token | `localStorage` | 7日 | ボディで返却 (Cookie ではない) |
+| Token | 保存場所 | 有効期限 |
+|-------|---------|---------|
+| Access Token | `localStorage` | 15分 |
+| Refresh Token | `localStorage` | 7日 |
 
 ```typescript
-// トークンの保存・取得ユーティリティ
-const TOKEN_KEY = 'accessToken'
-const REFRESH_KEY = 'refreshToken'
-
+// utils/tokenStorage.ts
 export const tokenStorage = {
-  getAccess: () => localStorage.getItem(TOKEN_KEY),
-  setAccess: (t: string) => localStorage.setItem(TOKEN_KEY, t),
-  getRefresh: () => localStorage.getItem(REFRESH_KEY),
-  setRefresh: (t: string) => localStorage.setItem(REFRESH_KEY, t),
-  clear: () => { localStorage.removeItem(TOKEN_KEY); localStorage.removeItem(REFRESH_KEY) },
+  getAccess:    () => localStorage.getItem('accessToken'),
+  setAccess:    (t: string) => localStorage.setItem('accessToken', t),
+  getRefresh:   () => localStorage.getItem('refreshToken'),
+  setRefresh:   (t: string) => localStorage.setItem('refreshToken', t),
+  clear:        () => {
+    localStorage.removeItem('accessToken')
+    localStorage.removeItem('refreshToken')
+  },
 }
 ```
 
 ---
 
-## client.ts の基本構造
+## API 関数 (async/await + try/catch)
 
 ```typescript
-const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? ''
+// api/taskApi.ts
+import { apiClient } from '@/api/client'
+import type { Task, CreateTaskBody, UpdateTaskBody } from '@/types/task'
 
-export class ApiError extends Error {
-  constructor(public status: number, message: string) {
-    super(message)
-    this.name = 'ApiError'
-  }
-}
-
-let isRefreshing = false
-let refreshQueue: Array<(token: string) => void> = []
-
-async function request<T>(path: string, options: RequestInit = {}, retry = true): Promise<T> {
-  const token = tokenStorage.getAccess()
-
-  const res = await fetch(`${BASE_URL}${path}`, {
-    ...options,
-    credentials: 'include',  // csrf_token Cookie の送受信に必須
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...options.headers,
-    },
-  })
-
-  // 401: Access Token 期限切れ → Refresh して1回だけ再試行
-  if (res.status === 401 && retry) {
-    const newToken = await doRefresh()
-    tokenStorage.setAccess(newToken)
-    return request<T>(path, options, false)
-  }
-
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}))
-    throw new ApiError(res.status, body.message ?? 'Unknown error')
-  }
-
-  // data フィールドを unwrap して返す
-  const body = await res.json()
-  return body.data as T
-}
-
-async function doRefresh(): Promise<string> {
-  const refreshToken = tokenStorage.getRefresh()
-  if (!refreshToken) throw new ApiError(401, 'No refresh token')
-
-  const res = await fetch(`${BASE_URL}/api/auth/refresh`, {
-    method: 'POST',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ refresh_token: refreshToken }),
-  })
-
-  if (!res.ok) {
-    tokenStorage.clear()
-    throw new ApiError(401, 'Refresh failed')
-  }
-
-  const body = await res.json()
-  return body.data  // 新しい access_token
-}
-
-export const apiClient = {
-  get:    <T>(path: string, opts?: RequestInit) => request<T>(path, { method: 'GET', ...opts }),
-  post:   <T>(path: string, data: unknown, opts?: RequestInit) =>
-    request<T>(path, { method: 'POST', body: JSON.stringify(data), ...opts }),
-  put:    <T>(path: string, data: unknown, opts?: RequestInit) =>
-    request<T>(path, { method: 'PUT', body: JSON.stringify(data), ...opts }),
-  patch:  <T>(path: string, data: unknown, opts?: RequestInit) =>
-    request<T>(path, { method: 'PATCH', body: JSON.stringify(data), ...opts }),
-  delete: <T>(path: string, opts?: RequestInit) => request<T>(path, { method: 'DELETE', ...opts }),
-}
-```
-
----
-
-## CSRF Token の扱い
-
-タスク操作 (POST / PUT / PATCH / DELETE) 前に CSRF トークンを取得する。
-サーバーはレスポンス JSON と Cookie を同時にセットするため、
-`credentials: 'include'` で受け取った後、ヘッダーに付けて使う。
-
-```typescript
-// hooks/useCsrfToken.ts
-export function useCsrfToken() {
-  const getCsrfToken = async (): Promise<string> => {
-    const token = await apiClient.get<string>('/api/auth/csrf-token')
-    return token
-  }
-  return { getCsrfToken }
-}
-
-// 使い方 (taskApi.ts)
 export const taskApi = {
-  create: async (payload: CreateTaskBody) => {
-    const csrfToken = await apiClient.get<string>('/api/auth/csrf-token')
-    return apiClient.post<Task>('/api/task/', payload, {
-      headers: { 'X-CSRF-Token': csrfToken }
+  getAll: async (): Promise<Task[]> => {
+    const { data } = await apiClient.get('/api/task/')
+    return data.data
+  },
+
+  getById: async (id: number): Promise<Task> => {
+    const { data } = await apiClient.get(`/api/task/${id}`)
+    return data.data
+  },
+
+  create: async (payload: CreateTaskBody): Promise<Task> => {
+    // タスク操作前に CSRF トークンを取得してヘッダーに付与する
+    const { data: csrf } = await apiClient.get('/api/auth/csrf-token')
+    const { data } = await apiClient.post('/api/task/', payload, {
+      headers: { 'X-CSRF-Token': csrf.data.token },
+    })
+    return data.data
+  },
+
+  update: async (id: number, payload: UpdateTaskBody): Promise<Task> => {
+    const { data: csrf } = await apiClient.get('/api/auth/csrf-token')
+    const { data } = await apiClient.put(`/api/task/${id}`, payload, {
+      headers: { 'X-CSRF-Token': csrf.data.token },
+    })
+    return data.data
+  },
+
+  updateStatus: async (id: number, statusId: number): Promise<void> => {
+    const { data: csrf } = await apiClient.get('/api/auth/csrf-token')
+    await apiClient.patch(`/api/task/${id}`, { status_id: statusId }, {
+      headers: { 'X-CSRF-Token': csrf.data.token },
     })
   },
-  // ...
+
+  delete: async (id: number): Promise<void> => {
+    const { data: csrf } = await apiClient.get('/api/auth/csrf-token')
+    await apiClient.delete(`/api/task/${id}`, {
+      headers: { 'X-CSRF-Token': csrf.data.token },
+    })
+  },
 }
 ```
 
 ---
 
-## カスタムフックパターン
+## TanStack Query
+
+`QueryClient` は `main.tsx` のルートに1つだけ設置する。
+
+```tsx
+// main.tsx
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+const queryClient = new QueryClient()
+
+<QueryClientProvider client={queryClient}>
+  <App />
+</QueryClientProvider>
+```
+
+### データ取得 (useQuery)
 
 ```typescript
 // hooks/useTasks.ts
-export function useTasks() {
-  const [tasks, setTasks] = useState<Task[]>([])
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+import { useQuery } from '@tanstack/react-query'
+import { taskApi } from '@/api/taskApi'
 
-  const fetchTasks = async () => {
-    setIsLoading(true)
-    setError(null)
-    try {
-      const data = await taskApi.getAll()
-      setTasks(data)
-    } catch (e) {
-      if (e instanceof ApiError && e.status === 429) {
-        setError('しばらく待ってから再試行してください')
-      } else {
-        setError(e instanceof ApiError ? e.message : 'タスクの取得に失敗しました')
-      }
-    } finally {
-      setIsLoading(false)
+export function useTasks() {
+  return useQuery({
+    queryKey: ['tasks'],
+    queryFn: taskApi.getAll,
+  })
+}
+
+// 使い方
+const { data: tasks, isLoading, error } = useTasks()
+```
+
+### データ更新 (useMutation)
+
+```typescript
+// hooks/useCreateTask.ts
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { taskApi } from '@/api/taskApi'
+import toast from 'react-hot-toast'
+
+export function useCreateTask() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: taskApi.create,
+    onSuccess: async () => {
+      // 作成成功後にキャッシュを破棄して一覧を再取得する
+      await queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      toast.success('タスクを作成しました')
+    },
+    onError: (error) => {
+      toast.error('タスクの作成に失敗しました')
+    },
+  })
+}
+```
+
+### try/catch が必要な場面
+
+TanStack Query の外で async 処理を書く場合は try/catch を使う。
+
+```typescript
+const handleSubmit = async (data: LoginFields) => {
+  try {
+    const { access_token, refresh_token } = await authApi.login(data)
+    tokenStorage.setAccess(access_token)
+    tokenStorage.setRefresh(refresh_token)
+    navigate('/')
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      toast.error(error.response?.data?.message ?? 'ログインに失敗しました')
     }
   }
-
-  useEffect(() => { fetchTasks() }, [])
-
-  return { tasks, isLoading, error, refetch: fetchTasks }
 }
+```
+
+---
+
+## 並列 API 呼び出し
+
+独立したリクエストは `Promise.all` で並列実行する。
+依存関係がない限りシーケンシャルにしない。
+
+```typescript
+// Bad: 順番に待つ必要がないのに直列になっている
+const user = await authApi.getMe()
+const tasks = await taskApi.getAll()
+
+// Good: 並列で取得してパフォーマンスを上げる
+const [user, tasks] = await Promise.all([
+  authApi.getMe(),
+  taskApi.getAll(),
+])
+```
+
+一部失敗しても他の結果を使いたい場合は `Promise.allSettled` を使う。
+
+```typescript
+const results = await Promise.allSettled([taskApi.getAll(), adminApi.getStats()])
+results.forEach(r => {
+  if (r.status === 'fulfilled') { ... }
+})
 ```
 
 ---
@@ -209,12 +280,11 @@ export function useChat() {
       setMessages(prev => [...prev, msg])
     }
 
-    ws.onerror = (e) => console.error('WS error', e)
     ws.onclose = () => { wsRef.current = null }
   }
 
   const sendMessage = (text: string) => {
-    wsRef.current?.send(text)  // テキストをそのまま送る
+    wsRef.current?.send(text)
   }
 
   useEffect(() => {
@@ -232,14 +302,15 @@ export function useChat() {
 
 ```typescript
 try {
-  await taskApi.create(payload)
-} catch (e) {
-  if (e instanceof ApiError) {
-    switch (e.status) {
-      case 403: // CSRF ミスマッチ → 再取得して再試行
-      case 429: // Rate Limit → "しばらく待ってください" 表示
-      case 408: // Timeout → "タイムアウトしました" 表示
-      default:  // その他 → e.message を表示
+  await someApi()
+} catch (error) {
+  if (axios.isAxiosError(error)) {
+    switch (error.response?.status) {
+      case 403:  // CSRF ミスマッチ → csrf-token を再取得して再試行
+      case 429:  // Rate Limit → "しばらく待ってください" 表示
+      case 408:  // Timeout → "タイムアウトしました" 表示
+      default:
+        toast.error(error.response?.data?.message ?? 'エラーが発生しました')
     }
   }
 }

@@ -24,6 +24,7 @@
 - Vite
 - React Router
 - Context API (状態管理)
+- Tailwind CSS
 
 ### Infra(未実装 / バックエンドに必要なリソースを一部設定)
 - AWS
