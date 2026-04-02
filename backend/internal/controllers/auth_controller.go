@@ -238,7 +238,7 @@ func (a *AuthControllerImpl) GetMe(c *gin.Context) {
 		return
 	}
 
-	user, err := a.authService.GetMe(c, userID.(string))
+	user, err := a.authService.GetMe(c, fmt.Sprintf("%d", userID.(uint)))
 	if err != nil {
 		if errors.Is(err, appErr.ErrUserNotFound) {
 			utils.ResponseError(c, http.StatusNotFound,
@@ -322,7 +322,7 @@ func (a *AuthControllerImpl) ChangePassword(c *gin.Context) {
 		return
 	}
 
-	err := a.authService.ChangePassword(c, userID.(string), req.OldPassword, req.NewPassword)
+	err := a.authService.ChangePassword(c, fmt.Sprintf("%d", userID.(uint)), req.OldPassword, req.NewPassword)
 	if err != nil {
 		utils.ResponseError(c, http.StatusInternalServerError,
 			"failed change password",

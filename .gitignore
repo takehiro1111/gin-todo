@@ -4,6 +4,7 @@
 **/tmp/main
 **/session.txt
 **/node_modules/
+**/dist/
 
 **/*.pem
 

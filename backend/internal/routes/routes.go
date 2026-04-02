@@ -56,14 +56,20 @@ func SetupRoutes(r *gin.Engine, adminCtrl controllers.AdminController, authCtrl 
 
 	apiTask := r.Group("/api/task")
 	apiTask.Use(middleware.VerifyUser(jwtProvider))
-	apiTask.Use(csrfProvider.VerifyCSRFToken)
 	{
+		// GET は CSRF 不要 (読み取り操作)
 		apiTask.GET("/", taskCtrl.GetTasks)
-		apiTask.POST("/", taskCtrl.CreateTask)
 		apiTask.GET("/:id", taskCtrl.GetTaskByID)
-		apiTask.PUT("/:id", taskCtrl.UpdateTask)
-		apiTask.PATCH("/:id", taskCtrl.UpdateTaskStatus)
-		apiTask.DELETE("/:id", taskCtrl.DeleteTask)
+
+		// 状態変更操作のみ CSRF を適用
+		apiTaskWrite := apiTask.Group("/")
+		apiTaskWrite.Use(csrfProvider.VerifyCSRFToken)
+		{
+			apiTaskWrite.POST("/", taskCtrl.CreateTask)
+			apiTaskWrite.PUT("/:id", taskCtrl.UpdateTask)
+			apiTaskWrite.PATCH("/:id", taskCtrl.UpdateTaskStatus)
+			apiTaskWrite.DELETE("/:id", taskCtrl.DeleteTask)
+		}
 	}
 
 	apiTasks := r.Group("/api/tasks")

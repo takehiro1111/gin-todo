@@ -67,8 +67,8 @@ func StartCleanup() {
 				TimeProvider:      &RateLimitRealTimeProvider{},
 				CleanupInterval:   10 * time.Minute,
 				InactiveThreshold: -30 * time.Minute,
-				RateLimit:         time.Minute / 10,
-				Burst:             10, // 10回の上限
+				RateLimit:         time.Second,
+				Burst:             100, // 100回の上限
 			}
 		}
 

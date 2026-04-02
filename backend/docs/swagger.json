@@ -2,7 +2,7 @@
     "swagger": "2.0",
     "info": {
         "description": "タスク管理APIのフルスタックアプリケーション",
-        "title": "Gin Todo API",
+        "title": "Todo API",
         "termsOfService": "http://swagger.io/terms/",
         "contact": {
             "name": "API Support",

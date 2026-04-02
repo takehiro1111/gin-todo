@@ -274,12 +274,9 @@ HTTP 上での `Secure` Cookie は通常ブラウザに保存されないが、*
 
 ```typescript
 // タスク操作の例
-// /api/auth/csrf-token は SuccessResponse 形式ではなく { token: string } を直接返すため、
-// apiClient のインターセプター (response.data.data アンラップ) を経由せず axios を直接使う
-const response = await axios.get<{ token: string }>(
-  `${import.meta.env.VITE_API_BASE_URL}/api/auth/csrf-token`,
-  { withCredentials: true }
-)
+// /api/auth/csrf-token は SuccessResponse 形式ではなく { token: string } を直接返す。
+// apiClient を使うことで Authorization ヘッダーが自動付与される (認証必須エンドポイント)。
+const response = await apiClient.get<{ token: string }>('/api/auth/csrf-token')
 const csrfToken = response.data.token
 
 await apiClient.post('/api/task/', payload, {
