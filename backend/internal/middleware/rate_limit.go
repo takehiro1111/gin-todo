@@ -2,8 +2,10 @@ package middleware
 
 import (
 	"log"
+	"math"
 	"net"
 	"net/http"
+	"strconv"
 	"sync"
 	"time"
 
@@ -67,8 +69,8 @@ func StartCleanup() {
 				TimeProvider:      &RateLimitRealTimeProvider{},
 				CleanupInterval:   10 * time.Minute,
 				InactiveThreshold: -30 * time.Minute,
-				RateLimit:         time.Second,
-				Burst:             100, // 100回の上限
+				RateLimit:         6 * time.Second,
+				Burst:             10, // 10回の上限
 			}
 		}
 
@@ -155,9 +157,11 @@ func RateLimit() gin.HandlerFunc {
 
 		limiter := getLimiter(ip)
 
-		if !limiter.Allow() {
-			// クライアントに再試行可能な時間を通知するためヘッダーを設定。
-			c.Header("Retry-After", "60")
+		r := limiter.Reserve()
+		if delay := r.Delay(); delay > 0 {
+			r.Cancel()
+			retryAfter := int(math.Ceil(delay.Seconds()))
+			c.Header("Retry-After", strconv.Itoa(retryAfter))
 			log.Printf("Rate limit exceeded for IP: %s\n", ip)
 			c.AbortWithStatusJSON(http.StatusTooManyRequests, utils.ErrorResponse{
 				Success:   false,

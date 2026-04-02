@@ -27,14 +27,20 @@ const STATUS_LABEL: Record<number, string> = {
 export function TaskDetailPage() {
   const { id } = useParams<{ id: string }>()
   const taskId = Number(id)
+  const isValidId = Number.isFinite(taskId) && taskId > 0
   const navigate = useNavigate()
 
-  const { data: task, isLoading } = useTask(taskId)
+  const { data: task, isLoading } = useTask(taskId, { enabled: isValidId })
   const updateTask = useUpdateTask(taskId)
   const deleteTask = useDeleteTask()
   const updateStatus = useUpdateTaskStatus()
 
   const [isEditOpen, setIsEditOpen] = useState(false)
+
+  if (!isValidId) {
+    navigate('/', { replace: true })
+    return null
+  }
 
   const handleUpdate = async (data: UpdateTaskBody) => {
     await updateTask.mutateAsync(data)

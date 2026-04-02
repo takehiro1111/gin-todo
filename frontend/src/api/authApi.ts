@@ -13,19 +13,25 @@ interface RegisterBody {
   password: string
 }
 
-interface AuthTokens {
-  access_token: string
-  refresh_token: string
-}
-
 /**
  * 認証関連 API
  */
 export const authApi = {
-  login: async (body: LoginBody): Promise<AuthTokens> => {
-    const { data } = await axios.post<{ success: true; data: AuthTokens }>(
+  login: async (body: LoginBody): Promise<string> => {
+    const { data } = await axios.post<{ success: true; data: { access_token: string } }>(
       `${import.meta.env.VITE_API_BASE_URL}/api/auth/login`,
-      body
+      body,
+      { withCredentials: true } // refresh_token Cookie を受け取るために必須
+    )
+    return data.data.access_token
+  },
+
+  // refresh_token Cookie を使って新しい access_token を取得する
+  refresh: async (): Promise<string> => {
+    const { data } = await axios.post<{ success: true; data: string }>(
+      `${import.meta.env.VITE_API_BASE_URL}/api/auth/refresh`,
+      {},
+      { withCredentials: true }
     )
     return data.data
   },

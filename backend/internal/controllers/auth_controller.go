@@ -53,10 +53,6 @@ type ChangePasswordRequest struct {
 	NewPassword string `json:"new_password" binding:"required"`
 }
 
-type RefreshTokenRequest struct {
-	RefreshToken string `json:"refresh_token" binding:"required"`
-}
-
 type ForgotPasswordRequest struct {
 	Email string `json:"email" binding:"required"`
 }
@@ -162,7 +158,11 @@ func (a *AuthControllerImpl) Login(c *gin.Context) {
 		return
 	}
 
-	utils.ResponseSuccess(c, http.StatusOK, "login successfully", map[string]string{"access_token": accessToken, "refresh_token": refreshToken}, a.timeProvider)
+	// refresh_token は HttpOnly Cookie にセットし、レスポンスボディには含めない
+	c.SetSameSite(http.SameSiteLaxMode)
+	c.SetCookie("refresh_token", refreshToken, 60*60*24*7, "/", "localhost", true, true)
+
+	utils.ResponseSuccess(c, http.StatusOK, "login successfully", map[string]string{"access_token": accessToken}, a.timeProvider)
 }
 
 // RefreshToken godoc
@@ -171,27 +171,25 @@ func (a *AuthControllerImpl) Login(c *gin.Context) {
 // @Tags         auth
 // @Accept       json
 // @Produce      json
-// @Param        request body RefreshTokenRequest true "リフレッシュトークン"
 // @Success      200 {object} utils.SuccessResponse
-// @Failure      400 {object} utils.ErrorResponse
+// @Failure      401 {object} utils.ErrorResponse
 // @Failure      500 {object} utils.ErrorResponse
-// @Security     BearerAuth
 // @Router       /api/auth/refresh [post]
 func (a *AuthControllerImpl) RefreshToken(c *gin.Context) {
-	var req RefreshTokenRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		// loggerを実装予定
-		utils.ResponseError(c, http.StatusBadRequest,
-			"invalid request",
-			err.Error(),
+	// refresh_token は HttpOnly Cookie から読み取る
+	refreshToken, err := c.Cookie("refresh_token")
+	if err != nil {
+		utils.ResponseError(c, http.StatusUnauthorized,
+			"missing refresh token",
+			"refresh_token cookie not found",
 			a.timeProvider,
 		)
 		return
 	}
 
-	token, err := a.authService.RefreshToken(c, req.RefreshToken)
+	token, err := a.authService.RefreshToken(c, refreshToken)
 	if err != nil {
-		utils.ResponseError(c, http.StatusInternalServerError,
+		utils.ResponseError(c, http.StatusUnauthorized,
 			"failed generate refresh token",
 			err.Error(),
 			a.timeProvider,
@@ -212,6 +210,9 @@ func (a *AuthControllerImpl) RefreshToken(c *gin.Context) {
 // @Security     BearerAuth
 // @Router       /api/auth/logout [post]
 func (a *AuthControllerImpl) Logout(c *gin.Context) {
+	// refresh_token Cookie を削除する (MaxAge=-1)
+	c.SetSameSite(http.SameSiteLaxMode)
+	c.SetCookie("refresh_token", "", -1, "/", "localhost", true, true)
 	utils.ResponseSuccess(c, http.StatusOK, "logout successfully", nil, a.timeProvider)
 }
 

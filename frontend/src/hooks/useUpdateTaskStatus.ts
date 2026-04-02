@@ -11,8 +11,11 @@ export function useUpdateTaskStatus() {
   return useMutation({
     mutationFn: ({ id, statusId }: { id: number; statusId: number }) =>
       taskApi.updateStatus(id, statusId),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['tasks'] })
+    onSuccess: async (_data, { id }) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['tasks'] }),
+        queryClient.invalidateQueries({ queryKey: ['tasks', id] }),
+      ])
       toast.success('ステータスを更新しました')
     },
     onError: () => {

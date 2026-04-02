@@ -1,5 +1,6 @@
 import type { Task } from '@/types/task'
 import { render, screen } from '@testing-library/react'
+import { type ReactElement } from 'react'
 import { MemoryRouter } from 'react-router-dom'
 import { TaskCard } from './TaskCard'
 
@@ -15,7 +16,7 @@ const mockTask: Task = {
   updated_at: '2026-04-01T00:00:00+09:00',
 }
 
-const renderWithRouter = (ui: React.ReactElement) => render(<MemoryRouter>{ui}</MemoryRouter>)
+const renderWithRouter = (ui: ReactElement) => render(<MemoryRouter>{ui}</MemoryRouter>)
 
 test('タイトルが表示される', () => {
   renderWithRouter(<TaskCard task={mockTask} />)

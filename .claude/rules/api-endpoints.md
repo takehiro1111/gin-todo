@@ -55,13 +55,16 @@ interface ErrorResponse {
 
 | Method | Path | Body | Description |
 |--------|------|------|-------------|
-| POST | `/api/auth/register` | `{ name, email, password }` | ユーザー登録 → `data: { access_token, refresh_token }` |
-| POST | `/api/auth/login` | `{ email, password }` | ログイン → `data: { access_token, refresh_token }` |
+| POST | `/api/auth/register` | `{ name, email, password }` | ユーザー登録 → `data: string` (access_token のみ) |
+| POST | `/api/auth/login` | `{ email, password }` | ログイン → `data: { access_token }` + `refresh_token` を HttpOnly Cookie にセット |
+| POST | `/api/auth/refresh` | - | Access Token 更新 → `data: string` (新 access_token)。refresh_token は Cookie から自動読み取り |
 | POST | `/api/auth/forgot` | `{ email }` | パスワードリセットメール送信 |
 | POST | `/api/auth/reset` | `{ reset_token, new_password }` | パスワードリセット実行 |
 
-**重要:** `access_token` も `refresh_token` も両方レスポンスボディで返る。
-HttpOnly Cookie ではない → 両方 `localStorage` に保存する。
+**重要:**
+- `access_token` はレスポンスボディで返る → メモリ (`tokenStorage` モジュール変数) に保存する
+- `refresh_token` はサーバーが `HttpOnly; Secure; SameSite=Lax` Cookie としてセット → JS からアクセス不可
+- login / refresh リクエストは `withCredentials: true` が必須 (Cookie の送受信に必要)
 
 ---
 
@@ -69,16 +72,15 @@ HttpOnly Cookie ではない → 両方 `localStorage` に保存する。
 
 | Method | Path | Body | Description |
 |--------|------|------|-------------|
-| POST | `/api/auth/logout` | - | ログアウト |
-| POST | `/api/auth/refresh` | `{ refresh_token: string }` | Access Token 更新 → `data: string` (新 access_token)。**Bearer には refresh_token を使う** (下記参照) |
+| POST | `/api/auth/logout` | - | ログアウト + refresh_token Cookie を削除 |
 | GET | `/api/auth/me` | - | 自分のプロフィール取得 |
 | PATCH | `/api/auth/password` | `{ old_password, new_password }` | パスワード変更 |
 | GET | `/api/auth/csrf-token` | - | CSRF トークン取得 → `{ token: string }` を直接返す (共通 SuccessResponse 形式ではない) + Cookie セット |
 
 ### Refresh フロー (詳細)
 
-`/api/auth/refresh` は `VerifyUser` ミドルウェア配下にあるため、`Authorization` ヘッダーに有効な JWT が必要。
-Access Token が期限切れの状況でこのエンドポイントを呼ぶため、**Refresh Token を Bearer として送信する**。
+`/api/auth/refresh` は認証不要エンドポイント。`Authorization` ヘッダーは不要。
+refresh_token は HttpOnly Cookie として自動送信される (`withCredentials: true` が必要)。
 
 ```typescript
 // axios インターセプターの例
@@ -87,34 +89,42 @@ apiClient.interceptors.response.use(
   async (error) => {
     if (error.response?.status !== 401) return Promise.reject(error)
 
-    const refreshToken = localStorage.getItem('refresh_token')
-    if (!refreshToken) {
-      // refresh_token もなければログアウト
-      logout()
-      return Promise.reject(error)
-    }
-
     try {
+      // refresh_token Cookie が自動送信される (withCredentials: true)
       const { data } = await axios.post(
         `${import.meta.env.VITE_API_BASE_URL}/api/auth/refresh`,
-        { refresh_token: refreshToken },
-        {
-          // refresh_token を Bearer として送り VerifyUser を通過する
-          headers: { Authorization: `Bearer ${refreshToken}` },
-        }
+        {},
+        { withCredentials: true }
       )
       const newAccessToken = data.data
-      localStorage.setItem('access_token', newAccessToken)
+      tokenStorage.setAccess(newAccessToken)
 
       // 元のリクエストを新しい access_token で再試行
       error.config.headers.Authorization = `Bearer ${newAccessToken}`
       return apiClient.request(error.config)
     } catch {
-      logout()
+      tokenStorage.clear()
+      // リダイレクトは PrivateRoute に任せる
       return Promise.reject(error)
     }
   }
 )
+```
+
+### ページリロード時の復元フロー
+
+access_token はメモリ管理のためリロードで消える。AuthContext マウント時に refresh を呼んで復元する。
+
+```typescript
+// AuthContext の useEffect
+authApi.refresh()
+  .then((accessToken) => {
+    tokenStorage.setAccess(accessToken)
+    return authApi.getMe()
+  })
+  .then(setUser)
+  .catch(() => { /* refresh_token Cookie がない = 未ログイン */ })
+  .finally(() => setIsLoading(false))
 ```
 
 ---

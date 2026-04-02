@@ -1,10 +1,13 @@
+// access token はメモリに保持する。localStorage に置かない（XSS 耐性向上）
+// refresh token は HttpOnly Cookie でサーバーが管理するためここでは扱わない
+let _accessToken: string | null = null
+
 export const tokenStorage = {
-  getAccess: () => localStorage.getItem('accessToken'),
-  setAccess: (t: string) => localStorage.setItem('accessToken', t),
-  getRefresh: () => localStorage.getItem('refreshToken'),
-  setRefresh: (t: string) => localStorage.setItem('refreshToken', t),
+  getAccess: () => _accessToken,
+  setAccess: (t: string) => {
+    _accessToken = t
+  },
   clear: () => {
-    localStorage.removeItem('accessToken')
-    localStorage.removeItem('refreshToken')
+    _accessToken = null
   },
 }

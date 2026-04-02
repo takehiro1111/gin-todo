@@ -74,11 +74,13 @@ Development: http://localhost:8080
 
 ## Authentication Flow
 
-1. `POST /api/auth/login` → `{ access_token, refresh_token }` がレスポンスボディで返る (Cookie ではない)
-2. 両トークンを `localStorage` に保存する
+1. `POST /api/auth/login` → レスポンスボディに `{ access_token }` のみ返る
+   - `refresh_token` はサーバーが `HttpOnly; Secure; SameSite=Lax` Cookie として自動セット
+2. `access_token` はメモリ (`tokenStorage` のモジュール変数) に保存する。`localStorage` には保存しない
 3. 以降のリクエストに `Authorization: Bearer <access_token>` ヘッダーを付与
-4. Access Token 期限切れ (401) → `POST /api/auth/refresh` を呼ぶ。このエンドポイントは `VerifyUser` ミドルウェア配下のため `Authorization: Bearer <refresh_token>` を付与し、ボディに `{ refresh_token }` を送る
-5. タスク操作前に `GET /api/auth/csrf-token` で CSRF トークン取得し `X-CSRF-Token` ヘッダーに付与
+4. ページリロード時は `POST /api/auth/refresh` を呼び access_token を復元する (Cookie が自動送信される)
+5. Access Token 期限切れ (401) → `POST /api/auth/refresh` を呼ぶ。認証不要エンドポイントのため Bearer ヘッダー不要。Cookie が自動送信される
+6. タスク操作前に `GET /api/auth/csrf-token` で CSRF トークン取得し `X-CSRF-Token` ヘッダーに付与
 
 ## Vite 設定
 

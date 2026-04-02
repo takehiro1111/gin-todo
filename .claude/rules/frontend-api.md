@@ -56,15 +56,20 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401 && !original._retry) {
       original._retry = true
       try {
-        const refreshToken = tokenStorage.getRefresh()
-        const { data } = await axios.post('/api/auth/refresh', { refresh_token: refreshToken })
-        tokenStorage.setAccess(data.data)
-        original.headers.Authorization = `Bearer ${data.data}`
+        // refresh_token は HttpOnly Cookie で自動送信される (withCredentials: true)
+        const { data } = await axios.post(
+          `${import.meta.env.VITE_API_BASE_URL}/api/auth/refresh`,
+          {},
+          { withCredentials: true }
+        )
+        const newAccessToken = data.data as string
+        tokenStorage.setAccess(newAccessToken)
+        original.headers.Authorization = `Bearer ${newAccessToken}`
         return apiClient(original)
       } catch {
-        // リフレッシュ失敗 → ログアウト
+        // リフレッシュ失敗もトークン削除のみ。リダイレクトは PrivateRoute に任せる
         tokenStorage.clear()
-        window.location.href = '/login'
+        return Promise.reject(error)
       }
     }
 
@@ -77,24 +82,24 @@ apiClient.interceptors.response.use(
 
 ## Token 管理
 
-| Token | 保存場所 | 有効期限 |
-|-------|---------|---------|
-| Access Token | `localStorage` | 15分 |
-| Refresh Token | `localStorage` | 7日 |
+| Token | 保存場所 | 有効期限 | 備考 |
+|-------|---------|---------|------|
+| Access Token | メモリ (モジュール変数) | 15分 | XSS で盗まれても短命 |
+| Refresh Token | HttpOnly Cookie (サーバー管理) | 7日 | JS からアクセス不可 |
 
 ```typescript
 // utils/tokenStorage.ts
+// access_token はメモリ管理。localStorage には保存しない
+let _accessToken: string | null = null
+
 export const tokenStorage = {
-  getAccess:    () => localStorage.getItem('accessToken'),
-  setAccess:    (t: string) => localStorage.setItem('accessToken', t),
-  getRefresh:   () => localStorage.getItem('refreshToken'),
-  setRefresh:   (t: string) => localStorage.setItem('refreshToken', t),
-  clear:        () => {
-    localStorage.removeItem('accessToken')
-    localStorage.removeItem('refreshToken')
-  },
+  getAccess: () => _accessToken,
+  setAccess: (t: string) => { _accessToken = t },
+  clear: () => { _accessToken = null },
 }
 ```
+
+**ページリロード時の復元:** メモリはリロードで消えるため、`AuthContext` マウント時に `POST /api/auth/refresh` を呼んで access_token を復元する。Cookie が自動送信されるため追加の認証情報は不要。
 
 ---
 

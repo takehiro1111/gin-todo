@@ -23,19 +23,12 @@ apiClient.interceptors.response.use(
     // 401 かつ未リトライの場合のみリフレッシュを試みる
     if (error.response?.status === 401 && !original._retry) {
       original._retry = true
-      const refreshToken = tokenStorage.getRefresh()
-      if (!refreshToken) {
-        // refresh_token がない場合はトークンを削除してエラーを返す。
-        // リダイレクトは PrivateRoute に任せる (window.location.href は使わない)
-        tokenStorage.clear()
-        return Promise.reject(error)
-      }
       try {
-        // refresh_token を Bearer として送り VerifyUser を通過する
+        // refresh_token は HttpOnly Cookie で自動送信される
         const { data } = await axios.post(
           `${import.meta.env.VITE_API_BASE_URL}/api/auth/refresh`,
-          { refresh_token: refreshToken },
-          { headers: { Authorization: `Bearer ${refreshToken}` } }
+          {},
+          { withCredentials: true }
         )
         const newAccessToken = data.data as string
         tokenStorage.setAccess(newAccessToken)

@@ -1,7 +1,6 @@
 import { authApi } from '@/api/authApi'
 import type { User } from '@/types/user'
 import { tokenStorage } from '@/utils/tokenStorage'
-import axios from 'axios'
 import { type ReactNode, createContext, useContext, useEffect, useState } from 'react'
 
 interface AuthContextValue {
@@ -16,42 +15,39 @@ export const AuthContext = createContext<AuthContextValue | null>(null)
 
 /**
  * 認証状態を管理するプロバイダー。
+ * - access token はメモリ管理 (tokenStorage)
+ * - refresh token は HttpOnly Cookie でサーバーが管理
+ * - マウント時に /refresh を叩いて access token を復元する
  */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  // マウント時にトークンがあれば自分のプロフィールを取得する
+  // マウント時に Cookie の refresh_token で access_token を復元する
   useEffect(() => {
-    const token = tokenStorage.getAccess()
-    if (!token) {
-      setIsLoading(false)
-      return
-    }
     authApi
-      .getMe()
+      .refresh()
+      .then((accessToken) => {
+        tokenStorage.setAccess(accessToken)
+        return authApi.getMe()
+      })
       .then(setUser)
-      .catch((error) => {
-        // 401 のみトークンを削除する。ネットワーク障害や 5xx ではトークンを保持する
-        if (axios.isAxiosError(error) && error.response?.status === 401) {
-          tokenStorage.clear()
-        }
+      .catch(() => {
+        // refresh_token Cookie がない or 期限切れ = 未ログイン。エラーは無視
       })
       .finally(() => setIsLoading(false))
   }, [])
 
   const login = async (email: string, password: string) => {
-    const { access_token, refresh_token } = await authApi.login({ email, password })
-    tokenStorage.setAccess(access_token)
-    tokenStorage.setRefresh(refresh_token)
+    const accessToken = await authApi.login({ email, password })
+    tokenStorage.setAccess(accessToken)
     const me = await authApi.getMe()
     setUser(me)
   }
 
   const register = async (name: string, email: string, password: string) => {
-    // バックエンドの Register は access_token のみ返すため、
-    // 続けて login を呼んで refresh_token も取得する
     await authApi.register({ name, email, password })
+    // register 後に login を呼ぶことで refresh_token Cookie がセットされる
     await login(email, password)
   }
 
