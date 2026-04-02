@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm install)",
+      "Bash(pnpm dev)",
+      "Bash(pnpm build)",
+      "Bash(pnpm preview)",
+      "Bash(pnpm biome check src/)",
+      "Bash(pnpm biome check --write src/)",
+      "Bash(pnpm typecheck)",
+      "Bash(pnpm test)",
+      "Bash(pnpm test --run)",
+      "Bash(pnpm exec husky init)",
+      "Bash(node --version)"
+    ]
+  }
+}
