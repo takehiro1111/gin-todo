@@ -18,7 +18,7 @@
 - Swagger / OpenAPI (swaggo)
 - Air (ホットリロード)
 
-### Frontend(Claude Codeを使用したバイブコーディングで実装済み)
+### Frontend(未実装 / 使用予定の技術スタック)
 - React
 - TypeScript
 - Vite

@@ -30,11 +30,20 @@ interface ErrorResponse {
 }
 ```
 
-すべての API レスポンスはこの形式。`data` フィールドにリソースが入る。
+**ほぼすべての** API レスポンスはこの形式。`data` フィールドにリソースが入る。
+
+以下の 2 エンドポイントは例外 (独自形式を返す):
+
+| エンドポイント | レスポンス形式 | 理由 |
+|---------------|--------------|------|
+| `GET /api/health` | `{ "status": "ok" }` | ヘルスチェック慣例形式 (LB・監視ツール向け) |
+| `GET /api/auth/csrf-token` | `{ "token": "<uuid>" }` | CSRF トークン専用。`data` にネストしない設計 |
 
 ---
 
 ## Health
+
+> **レスポンス形式の例外:** `{ "status": "ok" }` を直接返す (SuccessResponse 形式ではない)
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
@@ -61,10 +70,52 @@ HttpOnly Cookie ではない → 両方 `localStorage` に保存する。
 | Method | Path | Body | Description |
 |--------|------|------|-------------|
 | POST | `/api/auth/logout` | - | ログアウト |
-| POST | `/api/auth/refresh` | `{ refresh_token: string }` | Access Token 更新 → `data: string` (新 access_token) |
+| POST | `/api/auth/refresh` | `{ refresh_token: string }` | Access Token 更新 → `data: string` (新 access_token)。**Bearer には refresh_token を使う** (下記参照) |
 | GET | `/api/auth/me` | - | 自分のプロフィール取得 |
 | PATCH | `/api/auth/password` | `{ old_password, new_password }` | パスワード変更 |
-| GET | `/api/auth/csrf-token` | - | CSRF トークン取得 → `data: { token: string }` + Cookie セット |
+| GET | `/api/auth/csrf-token` | - | CSRF トークン取得 → `{ token: string }` を直接返す (共通 SuccessResponse 形式ではない) + Cookie セット |
+
+### Refresh フロー (詳細)
+
+`/api/auth/refresh` は `VerifyUser` ミドルウェア配下にあるため、`Authorization` ヘッダーに有効な JWT が必要。
+Access Token が期限切れの状況でこのエンドポイントを呼ぶため、**Refresh Token を Bearer として送信する**。
+
+```typescript
+// axios インターセプターの例
+apiClient.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    if (error.response?.status !== 401) return Promise.reject(error)
+
+    const refreshToken = localStorage.getItem('refresh_token')
+    if (!refreshToken) {
+      // refresh_token もなければログアウト
+      logout()
+      return Promise.reject(error)
+    }
+
+    try {
+      const { data } = await axios.post(
+        `${import.meta.env.VITE_API_BASE_URL}/api/auth/refresh`,
+        { refresh_token: refreshToken },
+        {
+          // refresh_token を Bearer として送り VerifyUser を通過する
+          headers: { Authorization: `Bearer ${refreshToken}` },
+        }
+      )
+      const newAccessToken = data.data
+      localStorage.setItem('access_token', newAccessToken)
+
+      // 元のリクエストを新しい access_token で再試行
+      error.config.headers.Authorization = `Bearer ${newAccessToken}`
+      return apiClient.request(error.config)
+    } catch {
+      logout()
+      return Promise.reject(error)
+    }
+  }
+)
+```
 
 ---
 
@@ -198,19 +249,41 @@ interface JWTClaims {
 
 サーバーは `/api/auth/csrf-token` で以下を同時に行う:
 1. レスポンス JSON に `{ token: string }` を返す
-2. `csrf_token` Cookie をセット (Secure, HttpOnly, 24時間)
+2. `csrf_token` Cookie をセット (Secure=**true**, HttpOnly=true, domain=localhost, 24時間)
 
 フロント側は:
 1. `credentials: 'include'` でリクエストし Cookie を受け取る
 2. レスポンスの `token` を `X-CSRF-Token` ヘッダーに付けてタスク操作を行う
 3. サーバーはヘッダー値と Cookie 値が一致するか検証する
 
+### ローカル開発における Secure Cookie の注意事項
+
+バックエンドは `Secure=true` をハードコードしており、環境による切り替えは現時点で**実装されていない**。
+
+HTTP 上での `Secure` Cookie は通常ブラウザに保存されないが、**`localhost` は例外**として扱われる。
+
+| 環境 | 動作 | 理由 |
+|------|------|------|
+| `localhost:3000` → `localhost:8080` (Chrome 89+, Firefox 75+) | **動作する** | ブラウザが `localhost` を「潜在的に信頼できるオリジン」とみなし、HTTP でも Secure Cookie を保存する |
+| `127.0.0.1` や Docker カスタムドメイン (例: `app.local`) | **動作しない** | `localhost` 例外が適用されないため、HTTP 上で Secure Cookie が保存されない |
+| curl / Postman など非ブラウザクライアント | **動作しない** | ブラウザの localhost 例外に依存しているため |
+
+**フロント実装の前提:** 開発サーバーは必ず `http://localhost:3000` で動作させること。`127.0.0.1` や別ホスト名は使わない。
+
+> **バックエンド改善メモ:** 将来的に Docker 環境や非ブラウザテストが必要になった場合は、`ENV` 環境変数を参照して `Secure=false` に切り替える実装が必要。
+
 ```typescript
 // タスク操作の例
-const { data } = await apiClient.get<{ token: string }>('/api/auth/csrf-token')
+// /api/auth/csrf-token は SuccessResponse 形式ではなく { token: string } を直接返すため、
+// apiClient のインターセプター (response.data.data アンラップ) を経由せず axios を直接使う
+const response = await axios.get<{ token: string }>(
+  `${import.meta.env.VITE_API_BASE_URL}/api/auth/csrf-token`,
+  { withCredentials: true }
+)
+const csrfToken = response.data.token
 
 await apiClient.post('/api/task/', payload, {
-  headers: { 'X-CSRF-Token': data.token }
+  headers: { 'X-CSRF-Token': csrfToken },
 })
 ```
 

@@ -77,7 +77,7 @@ Development: http://localhost:8080
 1. `POST /api/auth/login` → `{ access_token, refresh_token }` がレスポンスボディで返る (Cookie ではない)
 2. 両トークンを `localStorage` に保存する
 3. 以降のリクエストに `Authorization: Bearer <access_token>` ヘッダーを付与
-4. Access Token 期限切れ (401) → `POST /api/auth/refresh` でボディに `{ refresh_token }` を送り再取得
+4. Access Token 期限切れ (401) → `POST /api/auth/refresh` を呼ぶ。このエンドポイントは `VerifyUser` ミドルウェア配下のため `Authorization: Bearer <refresh_token>` を付与し、ボディに `{ refresh_token }` を送る
 5. タスク操作前に `GET /api/auth/csrf-token` で CSRF トークン取得し `X-CSRF-Token` ヘッダーに付与
 
 ## Vite 設定
