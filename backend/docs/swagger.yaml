@@ -114,7 +114,7 @@ info:
     name: MIT
     url: https://opensource.org/licenses/MIT
   termsOfService: http://swagger.io/terms/
-  title: Gin Todo API
+  title: Todo API
   version: "1.0"
 paths:
   /api/admin/tasks:

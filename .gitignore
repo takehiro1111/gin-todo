@@ -4,6 +4,7 @@
 **/tmp/main
 **/session.txt
 **/node_modules/
+**/dist/
 
 **/*.pem
 
@@ -11,3 +12,6 @@
 **/local/main
 backend/api
 **/cookies.txt
+
+.claude/rules/infra-cdk.md 
+.claude/rules/infra-architecture.md

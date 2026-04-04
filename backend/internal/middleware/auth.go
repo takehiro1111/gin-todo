@@ -34,7 +34,7 @@ func VerifyRoleAdmin(jwtProvider utils.JWTProvider) gin.HandlerFunc {
 			return
 		}
 
-		c.Set("user_id", claims.UserID)
+		c.Set("user_id", claims.UserID) // uint
 		c.Next()
 	}
 }
@@ -54,7 +54,7 @@ func VerifyUser(jwtProvider utils.JWTProvider) gin.HandlerFunc {
 			return
 		}
 
-		c.Set("user_id", claims.UserID)
+		c.Set("user_id", claims.UserID) // uint
 		c.Next()
 	}
 }

@@ -78,7 +78,7 @@ func (s *AuthServiceImpl) Register(ctx context.Context, name, email, password st
 		Name:         name,
 		Email:        email,
 		PasswordHash: hashedPassword,
-		RoleID:       1,
+		RoleID:       2,
 	}
 
 	err = s.userRepo.Create(ctx, &newUser)

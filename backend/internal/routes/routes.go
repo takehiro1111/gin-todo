@@ -41,6 +41,8 @@ func SetupRoutes(r *gin.Engine, adminCtrl controllers.AdminController, authCtrl 
 		authPublic.POST("/login", authCtrl.Login)
 		authPublic.POST("/forgot", authCtrl.ForgotPassword)
 		authPublic.POST("/reset", authCtrl.ResetPassword)
+		// refresh_token は HttpOnly Cookie から検証するため VerifyUser 不要
+		authPublic.POST("/refresh", authCtrl.RefreshToken)
 	}
 
 	// 認証必須（ログイン後）
@@ -48,7 +50,6 @@ func SetupRoutes(r *gin.Engine, adminCtrl controllers.AdminController, authCtrl 
 	authProtected.Use(middleware.VerifyUser(jwtProvider))
 	{
 		authProtected.POST("/logout", authCtrl.Logout)
-		authProtected.POST("/refresh", authCtrl.RefreshToken)
 		authProtected.GET("/me", authCtrl.GetMe)
 		authProtected.PATCH("/password", authCtrl.ChangePassword)
 		authProtected.GET("/csrf-token", csrfProvider.GenerateCSRFToken)
@@ -56,14 +57,20 @@ func SetupRoutes(r *gin.Engine, adminCtrl controllers.AdminController, authCtrl 
 
 	apiTask := r.Group("/api/task")
 	apiTask.Use(middleware.VerifyUser(jwtProvider))
-	apiTask.Use(csrfProvider.VerifyCSRFToken)
 	{
+		// GET は CSRF 不要 (読み取り操作)
 		apiTask.GET("/", taskCtrl.GetTasks)
-		apiTask.POST("/", taskCtrl.CreateTask)
 		apiTask.GET("/:id", taskCtrl.GetTaskByID)
-		apiTask.PUT("/:id", taskCtrl.UpdateTask)
-		apiTask.PATCH("/:id", taskCtrl.UpdateTaskStatus)
-		apiTask.DELETE("/:id", taskCtrl.DeleteTask)
+
+		// 状態変更操作のみ CSRF を適用する論理グループ
+		apiTaskWrite := apiTask.Group("")
+		apiTaskWrite.Use(csrfProvider.VerifyCSRFToken)
+		{
+			apiTaskWrite.POST("/", taskCtrl.CreateTask)
+			apiTaskWrite.PUT("/:id", taskCtrl.UpdateTask)
+			apiTaskWrite.PATCH("/:id", taskCtrl.UpdateTaskStatus)
+			apiTaskWrite.DELETE("/:id", taskCtrl.DeleteTask)
+		}
 	}
 
 	apiTasks := r.Group("/api/tasks")
