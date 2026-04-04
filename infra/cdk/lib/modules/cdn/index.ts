@@ -9,7 +9,7 @@ import { Duration } from 'aws-cdk-lib'
 import { Construct } from 'constructs'
 
 export interface CdnModuleProps {
-  frontendBucket: s3.IBucket
+  staticAssetsBucket: s3.IBucket
   alb: elbv2.IApplicationLoadBalancer
   domainName: string
   appDomain: string
@@ -28,12 +28,12 @@ export class CdnModule extends Construct {
     })
 
     const s3Origin = origins.S3BucketOrigin.withOriginAccessControl(
-      props.frontendBucket as s3.Bucket,
+      props.staticAssetsBucket as s3.Bucket,
       { originAccessControl: oac }
     )
 
     // VPC Origin: CloudFront → internal ALB (PrivateLink 経由)
-    // デプロイ後に CloudFront が VPC Origin 用の SG を自動作成する
+    // ALB がパスベースルーティングで Frontend / Backend に振り分ける
     const vpcOrigin = origins.VpcOrigin.withApplicationLoadBalancer(props.alb, {
       protocolPolicy: cloudfront.OriginProtocolPolicy.HTTP_ONLY,
       httpPort: 80,
@@ -43,12 +43,24 @@ export class CdnModule extends Construct {
       domainNames: [props.appDomain],
       certificate: props.certificate,
       defaultBehavior: {
-        origin: s3Origin,
+        // デフォルト → ALB → Frontend ECS (SPA)
+        origin: vpcOrigin,
         viewerProtocolPolicy:
           cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-        cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
+        allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD,
+        cachePolicy: cloudfront.CachePolicy.CACHING_DISABLED,
+        originRequestPolicy:
+          cloudfront.OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER,
       },
       additionalBehaviors: {
+        // 静的アセット → S3 OAC
+        '/assets/*': {
+          origin: s3Origin,
+          viewerProtocolPolicy:
+            cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+          cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
+        },
+        // WebSocket → ALB → Backend ECS
         '/api/ws/*': {
           origin: vpcOrigin,
           viewerProtocolPolicy:
@@ -58,6 +70,7 @@ export class CdnModule extends Construct {
           originRequestPolicy:
             cloudfront.OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER,
         },
+        // API → ALB → Backend ECS
         '/api/*': {
           origin: vpcOrigin,
           viewerProtocolPolicy:
@@ -68,18 +81,17 @@ export class CdnModule extends Construct {
             cloudfront.OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER,
         },
       },
-      defaultRootObject: 'index.html',
       errorResponses: [
         {
           httpStatus: 403,
           responseHttpStatus: 200,
-          responsePagePath: '/index.html',
+          responsePagePath: '/',
           ttl: Duration.minutes(5),
         },
         {
           httpStatus: 404,
           responseHttpStatus: 200,
-          responsePagePath: '/index.html',
+          responsePagePath: '/',
           ttl: Duration.minutes(5),
         },
       ],

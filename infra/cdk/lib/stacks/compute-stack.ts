@@ -12,6 +12,8 @@ import { ENV } from '@/env/env.js'
 export interface ComputeStackProps extends StackProps {
   vpcModule: VpcModule
   rdsModule: RdsModule
+  albSecurityGroup: ec2.ISecurityGroup
+  ecsSecurityGroup: ec2.ISecurityGroup
   sesIdentityArn: string
 }
 
@@ -24,26 +26,34 @@ export class ComputeStack extends Stack {
     this.ecsModule = new EcsModule(this, 'Ecs', {
       vpc: props.vpcModule.vpc,
       privateSubnets: props.vpcModule.privateSubnets,
-      containerPort: ENV.containerPort,
-      cpu: ENV.cpu,
-      memoryLimitMiB: ENV.memoryLimitMiB,
-      desiredCount: ENV.desiredCount,
-      containerName: ENV.containerName,
-      logGroupName: ENV.logGroupName,
+      albSecurityGroup: props.albSecurityGroup,
+      ecsSecurityGroup: props.ecsSecurityGroup,
       ssmParameterPrefix: ENV.ssmParameterPrefix,
-      ecrRepositoryName: ENV.ecrRepositoryName,
       sesIdentityArn: props.sesIdentityArn,
+
+      // Backend
+      backendContainerPort: ENV.backendContainerPort,
+      backendCpu: ENV.backendCpu,
+      backendMemoryLimitMiB: ENV.backendMemoryLimitMiB,
+      backendDesiredCount: ENV.backendDesiredCount,
+      backendContainerName: ENV.backendContainerName,
+      backendLogGroupName: ENV.backendLogGroupName,
+      backendEcrRepositoryName: ENV.backendEcrRepositoryName,
+
+      // Frontend
+      frontendContainerPort: ENV.frontendContainerPort,
+      frontendCpu: ENV.frontendCpu,
+      frontendMemoryLimitMiB: ENV.frontendMemoryLimitMiB,
+      frontendDesiredCount: ENV.frontendDesiredCount,
+      frontendContainerName: ENV.frontendContainerName,
+      frontendLogGroupName: ENV.frontendLogGroupName,
+      frontendEcrRepositoryName: ENV.frontendEcrRepositoryName,
+
+      // Auto Scaling
       minCapacity: ENV.minCapacity,
       maxCapacity: ENV.maxCapacity,
       cpuTargetUtilization: ENV.cpuTargetUtilization,
     })
-
-    // RDS へのアクセスを許可
-    props.rdsModule.securityGroup.addIngressRule(
-      this.ecsModule.securityGroup,
-      ec2.Port.tcp(ENV.dbPort),
-      'Allow PostgreSQL from ECS'
-    )
 
     // --- CloudWatch Alarms ---
 

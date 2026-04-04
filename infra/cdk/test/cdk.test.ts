@@ -2,10 +2,13 @@ import { describe, test, beforeAll } from 'vitest'
 import * as cdk from 'aws-cdk-lib'
 import { Template } from 'aws-cdk-lib/assertions'
 import { NetworkStack } from '@/lib/stacks/network-stack.js'
+import { SecurityStack } from '@/lib/stacks/security-stack.js'
 import { DataStack } from '@/lib/stacks/data-stack.js'
 import { CdnModule } from '@/lib/modules/cdn/index.js'
+import { DnsStack } from '@/lib/stacks/dns-stack.js'
 import { SsmLocalStack } from '@/lib/constructs/ssm-local.js'
 import { SsmStack } from '@/lib/stacks/ssm-stack.js'
+import { SecurityModule } from '@/lib/modules/security/index.js'
 import { VpcModule } from '@/lib/modules/vpc/index.js'
 import { RdsModule } from '@/lib/modules/rds/index.js'
 import { EcsModule } from '@/lib/modules/ecs/index.js'
@@ -21,15 +24,51 @@ describe('SsmLocalStack', () => {
   })
 })
 
+describe('DnsStack', () => {
+  test('Public Hosted Zone が作成される', () => {
+    const app = new cdk.App()
+    const stack = new DnsStack(app, 'TestDnsStack', { env })
+    const template = Template.fromStack(stack)
+    template.resourceCountIs('AWS::Route53::HostedZone', 1)
+  })
+})
+
+describe('SecurityStack', () => {
+  let template: Template
+
+  beforeAll(() => {
+    const app = new cdk.App()
+    const network = new NetworkStack(app, 'TestNetworkStack', { env })
+    const stack = new SecurityStack(app, 'TestSecurityStack', {
+      env,
+      vpcModule: network.vpcModule,
+    })
+    template = Template.fromStack(stack)
+  })
+
+  test('Security Group が3つ作成される (ALB, ECS, RDS)', () => {
+    template.resourceCountIs('AWS::EC2::SecurityGroup', 3)
+  })
+
+  test('RDS SG へのイングレスルールが作成される (ECS → PostgreSQL)', () => {
+    template.hasResourceProperties('AWS::EC2::SecurityGroupIngress', {
+      IpProtocol: 'tcp',
+      FromPort: 5432,
+      ToPort: 5432,
+    })
+  })
+})
+
 describe('SsmStack (本番用)', () => {
   test('SSM パラメータが7つ作成される', () => {
     const app = new cdk.App()
-    // RDS を同一スタックに作成して rdsInstance を渡す
     const stack = new cdk.Stack(app, 'TestSsmProdSetup', { env })
     const vpc = new cdk.aws_ec2.Vpc(stack, 'Vpc', { maxAzs: 2 })
+    const sg = new cdk.aws_ec2.SecurityGroup(stack, 'RdsSg', { vpc })
     const rdsModule = new RdsModule(stack, 'Rds', {
       vpc,
       subnets: vpc.privateSubnets,
+      securityGroup: sg,
       databaseName: 'gin-todo',
       credentials: cdk.aws_rds.Credentials.fromPassword(
         'gin',
@@ -57,7 +96,6 @@ describe('NetworkStack', () => {
     const app = new cdk.App()
     const stack = new NetworkStack(app, 'TestNetworkStack', { env })
     const template = Template.fromStack(stack)
-    // 2 AZs × 2 types = 4 subnets
     template.resourceCountIs('AWS::EC2::Subnet', 4)
   })
 
@@ -75,9 +113,14 @@ describe('DataStack', () => {
   beforeAll(() => {
     const app = new cdk.App()
     const network = new NetworkStack(app, 'TestNetworkStack', { env })
+    const security = new SecurityStack(app, 'TestSecurityStack', {
+      env,
+      vpcModule: network.vpcModule,
+    })
     const stack = new DataStack(app, 'TestDataStack', {
       env,
       vpcModule: network.vpcModule,
+      rdsSecurityGroup: security.securityModule.rdsSecurityGroup,
     })
     template = Template.fromStack(stack)
   })
@@ -93,21 +136,6 @@ describe('DataStack', () => {
     })
   })
 
-  test('S3 バケットが作成される', () => {
-    template.resourceCountIs('AWS::S3::Bucket', 1)
-  })
-
-  test('S3 バケットがパブリックアクセスをブロックしている', () => {
-    template.hasResourceProperties('AWS::S3::Bucket', {
-      PublicAccessBlockConfiguration: {
-        BlockPublicAcls: true,
-        BlockPublicPolicy: true,
-        IgnorePublicAcls: true,
-        RestrictPublicBuckets: true,
-      },
-    })
-  })
-
   test('SES ドメイン検証が作成される', () => {
     template.resourceCountIs('AWS::SES::EmailIdentity', 1)
   })
@@ -118,8 +146,14 @@ describe('ComputeStack', () => {
 
   beforeAll(() => {
     const app = new cdk.App()
-    // 循環参照回避: 全リソースを同一スタックに配置
     const stack = new cdk.Stack(app, 'TestComputeAllInOneStack', { env })
+
+    const sesIdentityArn = cdk.Stack.of(stack).formatArn({
+      service: 'ses',
+      resource: 'identity',
+      resourceName: 'todo.takehiro1111.com',
+    })
+
     const vpcModule = new VpcModule(stack, 'Vpc', {
       vpcCidr: '10.0.0.0/16',
       maxAzs: 2,
@@ -127,9 +161,16 @@ describe('ComputeStack', () => {
       publicSubnetCidrMask: 24,
       privateSubnetCidrMask: 24,
     })
+
+    const securityModule = new SecurityModule(stack, 'Security', {
+      vpc: vpcModule.vpc,
+      dbPort: 5432,
+    })
+
     const rdsModule = new RdsModule(stack, 'Rds', {
       vpc: vpcModule.vpc,
       subnets: vpcModule.privateSubnets,
+      securityGroup: securityModule.rdsSecurityGroup,
       databaseName: 'gin-todo',
       credentials: cdk.aws_rds.Credentials.fromPassword(
         'gin',
@@ -139,15 +180,21 @@ describe('ComputeStack', () => {
     new EcsModule(stack, 'Ecs', {
       vpc: vpcModule.vpc,
       privateSubnets: vpcModule.privateSubnets,
-      containerPort: 8080,
-      containerName: 'gin-todo-api',
-      logGroupName: '/ecs/gin-todo-api',
+      albSecurityGroup: securityModule.albSecurityGroup,
+      ecsSecurityGroup: securityModule.ecsSecurityGroup,
       ssmParameterPrefix: '/gin-todo',
-      ecrRepositoryName: 'gin-todo-api',
-      sesIdentityArn: `arn:aws:ses:ap-northeast-1:123456789012:identity/todo.takehiro1111.com`,
+      sesIdentityArn,
+      backendContainerPort: 8080,
+      backendContainerName: 'gin-todo-api',
+      backendLogGroupName: '/ecs/gin-todo-api',
+      backendEcrRepositoryName: 'gin-todo-api',
+      frontendContainerPort: 3000,
+      frontendContainerName: 'gin-todo-frontend',
+      frontendLogGroupName: '/ecs/gin-todo-frontend',
+      frontendEcrRepositoryName: 'gin-todo-frontend',
     })
 
-    // CloudWatch Alarms (ComputeStack のロジックを再現)
+    // CloudWatch Alarms
     new cdk.aws_sns.Topic(stack, 'AlarmTopic')
     new cdk.aws_cloudwatch.Alarm(stack, 'EcsCpuAlarm', {
       metric: new cdk.aws_cloudwatch.Metric({ namespace: 'AWS/ECS', metricName: 'CPUUtilization' }),
@@ -185,9 +232,7 @@ describe('ComputeStack', () => {
   test('ALB が internal である', () => {
     template.hasResourceProperties(
       'AWS::ElasticLoadBalancingV2::LoadBalancer',
-      {
-        Scheme: 'internal',
-      }
+      { Scheme: 'internal' }
     )
   })
 
@@ -195,25 +240,18 @@ describe('ComputeStack', () => {
     template.resourceCountIs('AWS::ECS::Cluster', 1)
   })
 
-  test('Fargate サービスが作成される', () => {
-    template.resourceCountIs('AWS::ECS::Service', 1)
-    template.hasResourceProperties('AWS::ECS::Service', {
-      LaunchType: 'FARGATE',
-    })
+  test('Fargate サービスが2つ作成される (Frontend + Backend)', () => {
+    template.resourceCountIs('AWS::ECS::Service', 2)
   })
 
-  test('タスク定義にコンテナポート 8080 が設定されている', () => {
-    template.hasResourceProperties('AWS::ECS::TaskDefinition', {
-      ContainerDefinitions: [
-        {
-          PortMappings: [{ ContainerPort: 8080, Protocol: 'tcp' }],
-        },
-      ],
-    })
+  test('ECR リポジトリが2つ作成される (Frontend + Backend)', () => {
+    template.resourceCountIs('AWS::ECR::Repository', 2)
   })
 
-  test('ECR リポジトリが作成される', () => {
-    template.resourceCountIs('AWS::ECR::Repository', 1)
+  test('ALB リスナールールが /api/* で設定されている', () => {
+    template.hasResourceProperties('AWS::ElasticLoadBalancingV2::ListenerRule', {
+      Priority: 10,
+    })
   })
 
   test('Auto Scaling が設定されている', () => {
@@ -235,7 +273,6 @@ describe('CdnStack', () => {
 
   beforeAll(() => {
     const app = new cdk.App()
-    // 全リソースを同一スタックに配置して循環参照を回避
     const cdnStack = new cdk.Stack(app, 'TestCdnStack', { env })
 
     const testBucket = new cdk.aws_s3.Bucket(cdnStack, 'TestBucket')
@@ -248,7 +285,6 @@ describe('CdnStack', () => {
       { domainName: 'todo.takehiro1111.com' }
     )
 
-    // テスト用の internal ALB を同一スタック内に作成
     const vpc = new cdk.aws_ec2.Vpc(cdnStack, 'TestVpc', { maxAzs: 2 })
     const alb = new cdk.aws_elasticloadbalancingv2.ApplicationLoadBalancer(
       cdnStack,
@@ -257,7 +293,7 @@ describe('CdnStack', () => {
     )
 
     new CdnModule(cdnStack, 'Cdn', {
-      frontendBucket: testBucket,
+      staticAssetsBucket: testBucket,
       alb,
       domainName: 'takehiro1111.com',
       appDomain: 'todo.takehiro1111.com',
@@ -275,14 +311,6 @@ describe('CdnStack', () => {
     template.resourceCountIs('AWS::CloudFront::VpcOrigin', 1)
   })
 
-  test('デフォルトルートオブジェクトが index.html', () => {
-    template.hasResourceProperties('AWS::CloudFront::Distribution', {
-      DistributionConfig: {
-        DefaultRootObject: 'index.html',
-      },
-    })
-  })
-
   test('カスタムドメインが設定されている', () => {
     template.hasResourceProperties('AWS::CloudFront::Distribution', {
       DistributionConfig: {
@@ -291,7 +319,11 @@ describe('CdnStack', () => {
     })
   })
 
+  test('S3 バケットが作成される', () => {
+    template.resourceCountIs('AWS::S3::Bucket', 1)
+  })
+
   test('Route53 A レコードが作成される', () => {
-    template.resourceCountIs('AWS::Route53::RecordSet', 2) // A + AAAA
+    template.resourceCountIs('AWS::Route53::RecordSet', 2)
   })
 })

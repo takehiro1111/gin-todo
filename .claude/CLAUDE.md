@@ -80,15 +80,17 @@ npx cdk deploy --all            # 全スタックデプロイ (ap-northeast-1)
 
 ### Infrastructure
 - AWS CDK (TypeScript) — L2/L3 Construct を積極使用、import は `@/` エイリアス
-- VPC + RDS PostgreSQL + ECS Fargate (ApplicationLoadBalancedFargateService) + CloudFront + S3
-- ECR Repository (コンテナイメージ管理)
-- Route53 + ACM (todo.takehiro1111.com → CloudFront)
+- CloudFront (VPC Origin + S3 OAC) → ALB (internal) → ECS Fargate (Frontend + Backend)
+- VPC (10.0.0.0/16) + Public/Private Subnet (2AZ) + NAT Gateway
+- RDS PostgreSQL 16.4 + S3 (静的アセット) + ECR Repository x2
+- Route53 Public Hosted Zone + ACM (todo.takehiro1111.com → CloudFront)
 - SES EmailIdentity (パスワードリセットメール)
-- ECS Auto Scaling (CPU 70% ターゲット、1-4 タスク)
-- CloudWatch Alarms → SNS (ECS CPU/メモリ、ALB 5xx、RDS CPU/ストレージ/接続数)
-- RDS パスワード: Secrets Manager 自動管理 → ECS に DB_SECRET_ARN 環境変数で注入
-- SSM Parameter Store (DB接続情報, JWT鍵)
-- IAM: SSM 読み取り + SES 送信 + Secrets Manager 読み取り
+- ECS Service Connect (gin-todo.local 名前空間、Frontend → Backend)
+- ECS Auto Scaling (CPU ターゲット追跡)
+- CloudWatch Alarms (6件) → SNS (ECS CPU/メモリ、ALB 5xx、RDS CPU/ストレージ/接続数)
+- RDS パスワード: `Credentials.fromPassword()` (SSM 管理)
+- SSM Parameter Store: ローカル用 (`SsmLocalStack`) + 本番用 (`SsmStack`, RDS エンドポイント動的取得)
+- IAM: SSM 読み取り + SES 送信 (ドメイン Identity に制限)
 - env/env.ts (パブリック値、Git 管理) + env/secret.ts (シークレット、.gitignore)
 - Vitest (テスト) / pnpm (パッケージ管理)
 - デプロイ先: ap-northeast-1 (東京)、ドメイン: todo.takehiro1111.com

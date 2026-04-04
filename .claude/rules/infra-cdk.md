@@ -13,17 +13,19 @@ infra/cdk/
 ├── bin/cdk.ts                      # エントリポイント — Stack 間の依存を配線
 ├── lib/
 │   ├── constructs/
-│   │   └── ssm-parameter.ts        # 既存 SSM Stack (デプロイ済み)
-│   ├── stacks/                     # Stack 定義
+│   │   └── ssm-local.ts            # ローカル開発用 SSM Stack (デプロイ済み)
+│   ├── stacks/
+│   │   ├── dns-stack.ts            # Route53 Public Hosted Zone
 │   │   ├── network-stack.ts        # VPC + Subnet
 │   │   ├── data-stack.ts           # RDS + S3 + SES
-│   │   ├── compute-stack.ts        # ECS Fargate (L3) + ECR + CloudWatch Alarms
+│   │   ├── ssm-stack.ts            # 本番用 SSM (RDS エンドポイント動的取得)
+│   │   ├── compute-stack.ts        # ECS (Frontend + Backend) + CloudWatch Alarms
 │   │   └── cdn-stack.ts            # CloudFront + Route53 + ACM
-│   └── modules/                    # 再利用可能な Construct モジュール
+│   └── modules/
 │       ├── vpc/index.ts            # VPC + Subnet + NAT Gateway
 │       ├── rds/index.ts            # RDS PostgreSQL + Security Group
-│       ├── ecs/index.ts            # ApplicationLoadBalancedFargateService (L3) + ECR + Auto Scaling
-│       └── cdn/index.ts            # CloudFront + S3 OAC + LoadBalancerV2Origin + Route53
+│       ├── ecs/index.ts            # ALB (internal) + Frontend/Backend ECS + Service Connect
+│       └── cdn/index.ts            # CloudFront + S3 OAC + VPC Origin + Route53
 ├── env/
 │   ├── env.ts                      # パブリック値 (Git 管理)
 │   └── secret.ts                   # シークレット (.gitignore)
@@ -53,48 +55,55 @@ pnpm test                    # Vitest テスト
 
 | Stack | CloudFormation 名 | リソース | 依存先 |
 |-------|-------------------|---------|--------|
-| SsmStack | `GinTodoSsmStack` | SSM Parameter Store | なし |
+| SsmLocalStack | `GinTodoSsmStack` | SSM Parameter Store (ローカル開発用) | なし |
+| DnsStack | `GinTodoDnsStack` | Route53 Public Hosted Zone | なし |
 | NetworkStack | `GinTodoNetworkStack` | VPC, Subnet (2AZ), NAT Gateway | なし |
-| DataStack | `GinTodoDataStack` | RDS PostgreSQL 16.4, S3, SES EmailIdentity | Network |
-| ComputeStack | `GinTodoComputeStack` | ALB + ECS Fargate (L3), ECR, Auto Scaling, CloudWatch Alarms, SNS | Network, Data |
-| CdnStack | `GinTodoCdnStack` | CloudFront, Route53 A/AAAA, ACM Certificate | Compute, Data |
+| DataStack | `GinTodoDataStack` | RDS PostgreSQL 16.4, S3 (静的アセット), SES EmailIdentity | Network |
+| SsmStack | `GinTodoSsmProductionStack` | SSM Parameter Store (本番用, RDS エンドポイント動的) | Data |
+| ComputeStack | `GinTodoComputeStack` | ALB (internal) + ECS Fargate (Frontend + Backend), ECR x2, Service Connect, Auto Scaling, CloudWatch Alarms, SNS | Network, Data |
+| CdnStack | `GinTodoCdnStack` | CloudFront (VPC Origin + S3 OAC), Route53 A/AAAA, ACM Certificate (us-east-1) | Compute, Data, Dns |
 
 ## Construct レベルの方針
 
 - **L2/L3 Construct を積極的に使用する**
-  - L3: `ApplicationLoadBalancedFargateService` (ALB + ECS Fargate 統合)
-  - L2: `Credentials.fromGeneratedSecret()` (RDS パスワードの Secrets Manager 自動管理)
-  - L2: `LoadBalancerV2Origin` (CloudFront → ALB の型安全な接続)
+  - L3: `ApplicationLoadBalancedFargateService` (ALB + Frontend ECS 統合)
+  - L2: `origins.VpcOrigin.withApplicationLoadBalancer()` (CloudFront VPC Origin → internal ALB)
   - L2: `S3BucketOrigin.withOriginAccessControl()` (CloudFront OAC)
+  - L2: `DnsValidatedCertificate` (ACM 証明書、us-east-1 指定)
+  - L2: `Credentials.fromPassword()` (SSM 管理の RDS パスワード)
   - L2: `ecr.Repository` (コンテナイメージ管理)
   - L2: `ses.EmailIdentity` (SES ドメイン検証)
+  - L2: `route53.PublicHostedZone` (DNS ゾーン)
   - L2: `route53.ARecord` / `AaaaRecord` (DNS レコード)
-  - L2: `acm.Certificate` (SSL 証明書、DNS 検証)
   - L2: `cloudwatch.Alarm` (監視アラーム)
   - L2: `autoScaleTaskCount` + `scaleOnCpuUtilization` (ECS Auto Scaling)
+  - L2: `ec2.Vpc` + `IpAddresses.cidr()` (VPC CIDR 明示指定)
 - **L1 (`Cfn*`) は L2/L3 で対応できない場合のみ使用**
 
 ## import パス
 
 - `@/` エイリアスを使用 (例: `import { ENV } from '@/env/env.js'`)
-- `tsconfig.json` の `paths` + `vitest.config.ts` の `resolve.alias` で解決
+- `tsconfig.json` の `paths` で解決 (`baseUrl` 不要、TS 5.x+)
+- `vitest.config.ts` の `resolve.alias` で Vitest 実行時に解決
 - 同一ディレクトリ内の参照 (`./secret.js` 等) はそのまま
 
 ## 規約
 
 - **新規リソース追加**: `lib/modules/` に Module、`lib/stacks/` に Stack を作成
-- **既存 SSM Stack**: `lib/constructs/ssm-parameter.ts` はデプロイ済みのため変更しない
+- **ローカル用 SSM**: `lib/constructs/ssm-local.ts` はデプロイ済みのため変更しない
+- **本番用 SSM**: `lib/stacks/ssm-stack.ts` で RDS エンドポイントを動的取得
 - **環境固有の値**: `env/env.ts` (パブリック) + `env/secret.ts` (シークレット) に分離
 - **命名**: Stack 名は `GinTodo` プレフィックス + リソースカテゴリ
-- **テスト**: `Template.fromStack()` でリソースの存在と設定を検証する
+- **テスト**: `Template.fromStack()` でリソースの存在と設定を検証。ARN は `Stack.formatArn()` を使用
 - **パッケージ管理**: pnpm を使用 (npm/yarn は使わない)
 
 ## シークレット管理
 
 - `env/env.ts`: パブリックなパラメータ (Git 管理)
 - `env/secret.ts`: シークレット値 (.gitignore で Git 管理外)
-- RDS パスワード: `Credentials.fromGeneratedSecret()` で Secrets Manager 自動管理
-- RDS Secret は ECS に `DB_SECRET_ARN` 環境変数として注入
+- RDS パスワード: `Credentials.fromPassword()` で SSM 管理のパスワードを使用
+- 本番 SSM: RDS エンドポイントを `rdsInstance.dbInstanceEndpointAddress` で動的設定
+- SSL モード: ローカル `disable` / 本番 `require`
 - 本番値は絶対にコミットしない
 
 ## CDK 新規リソース追加時の手順

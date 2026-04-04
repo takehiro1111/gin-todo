@@ -2,14 +2,14 @@ import * as acm from 'aws-cdk-lib/aws-certificatemanager'
 import * as elbv2 from 'aws-cdk-lib/aws-elasticloadbalancingv2'
 import * as route53 from 'aws-cdk-lib/aws-route53'
 import * as s3 from 'aws-cdk-lib/aws-s3'
-import { CfnOutput, Stack, StackProps } from 'aws-cdk-lib'
+import { CfnOutput, RemovalPolicy, Stack, StackProps } from 'aws-cdk-lib'
 import { Construct } from 'constructs'
 import { CdnModule } from '@/lib/modules/cdn/index.js'
 import { ENV } from '@/env/env.js'
 
 export interface CdnStackProps extends StackProps {
-  frontendBucket: s3.IBucket
   alb: elbv2.IApplicationLoadBalancer
+  hostedZone: route53.IHostedZone
 }
 
 export class CdnStack extends Stack {
@@ -18,25 +18,29 @@ export class CdnStack extends Stack {
   constructor(scope: Construct, id: string, props: CdnStackProps) {
     super(scope, id, props)
 
-    // 既存の HostedZone を参照
-    const hostedZone = route53.HostedZone.fromLookup(this, 'HostedZone', {
-      domainName: ENV.domainName,
+    // 静的アセット用 S3 バケット (CloudFront OAC 経由でのみアクセス)
+    const staticAssetsBucket = new s3.Bucket(this, 'StaticAssetsBucket', {
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+      encryption: s3.BucketEncryption.S3_MANAGED,
+      enforceSSL: true,
+      removalPolicy: RemovalPolicy.RETAIN,
+      autoDeleteObjects: false,
     })
 
     // CloudFront 用 SSL 証明書 (us-east-1 に作成)
     const certificate = new acm.DnsValidatedCertificate(this, 'Certificate', {
       domainName: ENV.appDomain,
-      hostedZone,
+      hostedZone: props.hostedZone,
       region: 'us-east-1',
     })
 
     this.cdnModule = new CdnModule(this, 'Cdn', {
-      frontendBucket: props.frontendBucket,
+      staticAssetsBucket,
       alb: props.alb,
       domainName: ENV.domainName,
       appDomain: ENV.appDomain,
       certificate,
-      hostedZone,
+      hostedZone: props.hostedZone,
     })
 
     new CfnOutput(this, 'AppUrl', {
