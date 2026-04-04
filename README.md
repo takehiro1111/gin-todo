@@ -58,7 +58,7 @@ graph LR
     Controller --> Service[Service]
     Service --> Repository[Repository]
     Repository --> DB[(PostgreSQL)]
-    Service --> AWS[AWS SDK<br/>SSM / SES]
+    Service --> AWS[AWS SDK<br>SSM / SES]
 ```
 
 ### リクエスト処理フロー
@@ -100,15 +100,15 @@ sequenceDiagram
     participant API as Backend API
 
     B->>F: メールアドレス・パスワード入力
-    F->>API: POST /api/auth/login<br/>{email, password}
+    F->>API: POST /api/auth/login
     API->>API: パスワード照合 (bcrypt)
     API->>API: Access Token 生成 (JWT, 15分)
     API->>API: Refresh Token 生成 (JWT, 7日)
-    API-->>F: 200 { access_token: "eyJ..." }
-    Note over API,F: Set-Cookie: refresh_token=eyJ...<br/>HttpOnly; SameSite=Lax
-    F->>F: access_token をメモリに保存<br/>(localStorage には保存しない)
-    F->>API: GET /api/auth/me<br/>Authorization: Bearer eyJ...
-    API-->>F: 200 { user }
+    API-->>F: 200 access_token
+    Note over API,F: Set-Cookie: refresh_token<br>HttpOnly / SameSite=Lax
+    F->>F: access_token をメモリに保存
+    F->>API: GET /api/auth/me<br>Authorization: Bearer token
+    API-->>F: 200 user情報
     F->>B: ダッシュボード表示
 ```
 
@@ -120,15 +120,15 @@ sequenceDiagram
     participant API as Backend API
 
     Note over F: リロード → メモリの access_token が消える
-    F->>API: POST /api/auth/refresh<br/>(Cookie: refresh_token が自動送信)
+    F->>API: POST /api/auth/refresh<br>(Cookie: refresh_token が自動送信)
     API->>API: refresh_token を検証
     API->>API: 新しい Access Token 生成
     API->>API: 新しい Refresh Token 生成
-    API-->>F: 200 { data: "新access_token" }
-    Note over API,F: Set-Cookie: refresh_token=新token<br/>(トークンローテーション)
+    API-->>F: 200 新 access_token
+    Note over API,F: Set-Cookie: refresh_token=新token<br>(トークンローテーション)
     F->>F: 新 access_token をメモリに保存
     F->>API: GET /api/auth/me (Bearer 新token)
-    API-->>F: 200 { user }
+    API-->>F: 200 user情報
     Note over F: セッション復元完了
 ```
 

@@ -1,9 +1,11 @@
 import * as ssm from "aws-cdk-lib/aws-ssm";
 import { Stack, StackProps } from "aws-cdk-lib";
 import { Construct } from "constructs";
-import { ENV } from "../../env/env";
+import { ENV } from "@/env/env.js";
 
-export class SsmParameterStack extends Stack {
+// ローカル開発用 SSM パラメータ (デプロイ済み)
+// 本番用は lib/stacks/ssm-stack.ts を使用する
+export class SsmLocalStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
 
