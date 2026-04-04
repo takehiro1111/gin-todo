@@ -160,7 +160,8 @@ func (a *AuthControllerImpl) Login(c *gin.Context) {
 
 	// refresh_token は HttpOnly Cookie にセットし、レスポンスボディには含めない
 	c.SetSameSite(http.SameSiteLaxMode)
-	c.SetCookie("refresh_token", refreshToken, 60*60*24*7, "/", "localhost", true, true)
+	// c.SetCookie("refresh_token", refreshToken, 60*60*24*7, "/", "", true, true)
+	c.SetCookie("refresh_token", refreshToken, 60*60*24*7, "/", "", false, true)
 
 	utils.ResponseSuccess(c, http.StatusOK, "login successfully", map[string]string{"access_token": accessToken}, a.timeProvider)
 }
@@ -197,7 +198,11 @@ func (a *AuthControllerImpl) RefreshToken(c *gin.Context) {
 		return
 	}
 
-	utils.ResponseSuccess(c, http.StatusOK, "generate refresh token successfully", token, a.timeProvider)
+	// 新しい refresh_token を HttpOnly Cookie にセットしてローテーションする
+	c.SetSameSite(http.SameSiteLaxMode)
+	c.SetCookie("refresh_token", token.RefreshToken, 60*60*24*7, "/", "", false, true)
+
+	utils.ResponseSuccess(c, http.StatusOK, "generate refresh token successfully", token.AccessToken, a.timeProvider)
 }
 
 // Logout godoc

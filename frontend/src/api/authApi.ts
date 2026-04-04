@@ -21,22 +21,21 @@ export const authApi = {
     const { data } = await axios.post<{ success: true; data: { access_token: string } }>(
       `${import.meta.env.VITE_API_BASE_URL}/api/auth/login`,
       body,
-      { withCredentials: true } // refresh_token Cookie を受け取るために必須
+      { withCredentials: true }
     )
     return data.data.access_token
   },
 
   // refresh_token Cookie を使って新しい access_token を取得する
   refresh: async (): Promise<string> => {
-    const { data } = await axios.post<{ success: true; data: string }>(
+    const { data } = await axios.post<{ success: true; data: { access_token: string } | string }>(
       `${import.meta.env.VITE_API_BASE_URL}/api/auth/refresh`,
       {},
       { withCredentials: true }
     )
-    return data.data
+    return typeof data.data === 'string' ? data.data : data.data.access_token
   },
 
-  // バックエンドの Register は access_token のみ返す (refresh_token なし)
   register: async (body: RegisterBody): Promise<string> => {
     const { data } = await axios.post<{ success: true; data: string }>(
       `${import.meta.env.VITE_API_BASE_URL}/api/auth/register`,

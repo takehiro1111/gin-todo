@@ -70,7 +70,7 @@ func StartCleanup() {
 				CleanupInterval:   10 * time.Minute,
 				InactiveThreshold: -30 * time.Minute,
 				RateLimit:         6 * time.Second,
-				Burst:             10, // 10回の上限
+				Burst:             100, // 10回の上限
 			}
 		}
 

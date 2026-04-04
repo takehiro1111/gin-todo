@@ -10,11 +10,13 @@ export const apiClient = axios.create({
 // リクエストインターセプター: Access Token を自動付与
 apiClient.interceptors.request.use((config) => {
   const token = tokenStorage.getAccess()
-  if (token) config.headers.Authorization = `Bearer ${token}`
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
   return config
 })
 
-// レスポンスインターセプター: 401 時に refresh して再試行 (無限ループ防止)
+// レスポンスインターセプター: 401 時に refresh して再試行
 apiClient.interceptors.response.use(
   (res) => res,
   async (error) => {
@@ -30,14 +32,25 @@ apiClient.interceptors.response.use(
           {},
           { withCredentials: true }
         )
-        const newAccessToken = data.data as string
+
+        // レスポンス形式が { data: { access_token: "..." } } か { data: "..." } かを判定して取得
+        const newAccessToken =
+          typeof data.data === 'string' ? data.data : data.data?.access_token
+
+        if (!newAccessToken) {
+          throw new Error('Access token not found in refresh response')
+        }
+
+        // 新しいトークンを保存してヘッダーを更新
         tokenStorage.setAccess(newAccessToken)
         original.headers.Authorization = `Bearer ${newAccessToken}`
+
+        // 元のリクエストを再試行
         return apiClient(original)
-      } catch {
-        // リフレッシュ失敗もトークン削除のみ。リダイレクトは PrivateRoute に任せる
+      } catch (refreshError) {
+        // リフレッシュ自体が失敗した場合は認証情報をクリア
         tokenStorage.clear()
-        return Promise.reject(error)
+        return Promise.reject(refreshError)
       }
     }
 
