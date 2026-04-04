@@ -21,21 +21,23 @@ export const AuthContext = createContext<AuthContextValue | null>(null)
  */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState<boolean>(true)
 
   // マウント時に Cookie の refresh_token で access_token を復元する
   useEffect(() => {
-    authApi
-      .refresh()
-      .then((accessToken) => {
+    const restore = async () => {
+      try {
+        const accessToken = await authApi.refresh()
         tokenStorage.setAccess(accessToken)
-        return authApi.getMe()
-      })
-      .then(setUser)
-      .catch(() => {
+        const me = await authApi.getMe()
+        setUser(me)
+      } catch {
         // refresh_token Cookie がない or 期限切れ = 未ログイン。エラーは無視
-      })
-      .finally(() => setIsLoading(false))
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    restore()
   }, [])
 
   const login = async (email: string, password: string) => {

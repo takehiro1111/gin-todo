@@ -11,7 +11,15 @@
       "Bash(pnpm test)",
       "Bash(pnpm test --run)",
       "Bash(pnpm exec husky init)",
-      "Bash(node --version)"
+      "Bash(node --version)",
+      "Bash(cd backend && go test ./...)",
+      "Bash(cd backend && go build ./...)",
+      "Bash(cd backend && make *)",
+      "Bash(docker compose *)",
+      "Bash(cd backend && go vet ./...)",
+      "Bash(cd infra/cdk && npx cdk synth)",
+      "Bash(cd infra/cdk && npx cdk diff)",
+      "Bash(cd infra/cdk && npm test)"
     ]
   }
 }
