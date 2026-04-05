@@ -47,142 +47,86 @@
 
 ---
 
-## アーキテクチャ
+## アーキテクチャ / リクエスト処理フロー
 
-### バックエンドのレイヤー構成
-
-```mermaid
-graph LR
-    Client[クライアント] --> Router[Router / Middleware]
-    Router --> Controller[Controller]
-    Controller --> Service[Service]
-    Service --> Repository[Repository]
-    Repository --> DB[(PostgreSQL)]
-    Service --> AWS[AWS SDK<br/>SSM / SES]
-```
-
-### リクエスト処理フロー
+Router 層で共通ミドルウェアを通し、Controller → Service → Repository → DB の順に処理を委譲する。
+外部サービス呼び出しは Service 層から AWS SDK 経由で行う。
 
 ```mermaid
 sequenceDiagram
     participant C as Client
-    participant M as Middleware
+    participant MW as Middleware
     participant Ctrl as Controller
     participant Svc as Service
     participant Repo as Repository
     participant DB as PostgreSQL
+    participant AWS as AWS SSM SES
 
-    C->>M: HTTP Request
-    M->>M: CORS / Logger / RateLimit / Gzip
-    M->>M: JWT 検証 (認証必須ルートのみ)
-    M->>M: CSRF 検証 (書き込み操作のみ)
-    M->>Ctrl: gin.Context (user_id セット済み)
-    Ctrl->>Ctrl: リクエストバインド & バリデーション
+    C->>MW: HTTP Request
+    MW->>MW: CORS Logger RateLimit Gzip
+    MW->>MW: JWT 検証 認証ルートのみ
+    MW->>MW: CSRF 検証 書き込み時のみ
+    MW->>Ctrl: gin.Context user_id セット済み
+    Ctrl->>Ctrl: バインド バリデーション
     Ctrl->>Svc: ビジネスロジック呼び出し
     Svc->>Repo: データアクセス
-    Repo->>DB: SQL (GORM)
+    Repo->>DB: SQL GORM
     DB-->>Repo: 結果
-    Repo-->>Svc: モデル or nil
+    Svc->>AWS: SSM SES 呼び出し
+    AWS-->>Svc: レスポンス
     Svc-->>Ctrl: データ or error
-    Ctrl-->>C: JSON レスポンス (SuccessResponse / ErrorResponse)
+    Ctrl-->>C: JSON レスポンス
 ```
 
 ---
 
 ## 認証・認可
 
-### ログインフロー
+### 認証フロー総合図 (ログイン / Refresh / CSRF / 401 自動リトライ)
+
+- Access Token はメモリ保存 15分、Refresh Token は HttpOnly Cookie 7日
+- タスク書き込み前に CSRF トークンを取得しヘッダーに付与 (ダブルサブミット)
+- 401 は axios interceptor が自動で refresh して再試行
 
 ```mermaid
 sequenceDiagram
-    participant B as ブラウザ
     participant F as Frontend
     participant API as Backend API
 
-    B->>F: メールアドレス・パスワード入力
+    Note over F,API: 1. ログイン
     F->>API: POST /api/auth/login
-    API->>API: パスワード照合 bcrypt
-    API->>API: Access Token 生成 JWT 15分
-    API->>API: Refresh Token 生成 JWT 7日
-    API-->>F: 200 access_token
-    Note over API,F: Set-Cookie refresh_token<br/>HttpOnly SameSite=Lax
-    F->>F: access_token をメモリに保存
-    F->>API: GET /api/auth/me<br/>Authorization Bearer token
-    API-->>F: 200 user情報
-    F->>B: ダッシュボード表示
-```
+    API-->>F: 200 access_token<br/>Set-Cookie refresh_token
 
-### トークンリフレッシュ (ページリロード時 / 401 発生時)
-
-```mermaid
-sequenceDiagram
-    participant F as Frontend
-    participant API as Backend API
-
-    Note over F: リロード時はメモリの access_token が消える
-    F->>API: POST /api/auth/refresh<br/>Cookie refresh_token は自動送信
-    API->>API: refresh_token を検証
-    API->>API: 新しい Access Token 生成
-    API->>API: 新しい Refresh Token 生成
+    Note over F,API: 2. リロード時は refresh でセッション復元
+    F->>API: POST /api/auth/refresh
     API-->>F: 200 新 access_token
-    Note over API,F: Set-Cookie refresh_token=新token<br/>トークンローテーション
-    F->>F: 新 access_token をメモリに保存
-    F->>API: GET /api/auth/me Bearer 新token
-    API-->>F: 200 user情報
-    Note over F: セッション復元完了
-```
 
-### 401 発生時の自動リトライ (axios interceptor)
-
-```mermaid
-sequenceDiagram
-    participant F as Frontend
-    participant Int as axios interceptor
-    participant API as Backend API
-
-    F->>API: GET /api/task/ 期限切れ access_token
-    API-->>Int: 401 Unauthorized
-    Int->>API: POST /api/auth/refresh<br/>Cookie 自動送信
-    API-->>Int: 200 新 access_token
-    Int->>Int: メモリに保存
-    Int->>API: GET /api/task/ 新 access_token で再試行
-    API-->>F: 200 tasks
-    Note over F: ユーザーはエラーに気づかない
-```
-
-### CSRF トークンフロー (タスク書き込み操作)
-
-```mermaid
-sequenceDiagram
-    participant F as Frontend
-    participant API as Backend API
-
-    F->>API: GET /api/auth/csrf-token<br/>Authorization Bearer token
-    API->>API: UUID でトークン生成
-    API-->>F: 200 token uuid
-    Note over API,F: Set-Cookie csrf_token=uuid<br/>HttpOnly Secure
-    F->>API: POST /api/task/<br/>Authorization Bearer token<br/>X-CSRF-Token uuid<br/>Cookie csrf_token も自動送信
-    API->>API: ヘッダーの token と<br/>Cookie の token が一致するか検証
+    Note over F,API: 3. タスク書き込み前は CSRF トークン取得
+    F->>API: GET /api/auth/csrf-token
+    API-->>F: token<br/>Set-Cookie csrf_token
+    F->>API: POST /api/task/<br/>X-CSRF-Token ヘッダー付与
     API-->>F: 201 task
+
+    Note over F,API: 4. 401 は interceptor が自動リトライ
+    F->>API: GET /api/task/ 期限切れ token
+    API-->>F: 401 Unauthorized
+    F->>API: POST /api/auth/refresh
+    API-->>F: 200 新 access_token
+    F->>API: GET /api/task/ 新 token で再試行
+    API-->>F: 200 tasks
 ```
 
 ### 認可 (ロールベースアクセス制御)
 
 ```mermaid
-graph TD
-    Req[リクエスト] --> JWT{JWT 検証}
-    JWT -->|無効| R401[401 Unauthorized]
-    JWT -->|有効| Role{ロール判定}
-
-    Role -->|一般ルート<br/>VerifyUser| OK1[user_id を Context にセット<br/>→ Controller へ]
-    Role -->|管理者ルート<br/>VerifyRoleAdmin| Admin{role == admin?}
-    Admin -->|Yes| OK2[Controller へ]
-    Admin -->|No| R403[403 Forbidden]
-
-    style R401 fill:#fee,stroke:#c00
-    style R403 fill:#fee,stroke:#c00
-    style OK1 fill:#efe,stroke:#0a0
-    style OK2 fill:#efe,stroke:#0a0
+flowchart TD
+    Req["リクエスト"] --> JWT{"JWT 検証"}
+    JWT -->|無効| R401["401 Unauthorized"]
+    JWT -->|有効| Role{"ロール判定"}
+    Role -->|VerifyUser| OK1["Controller へ"]
+    Role -->|VerifyRoleAdmin| Admin{"role admin"}
+    Admin -->|Yes| OK2["Controller へ"]
+    Admin -->|No| R403["403 Forbidden"]
 ```
 
 ### トークン管理まとめ
