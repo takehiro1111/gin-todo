@@ -101,13 +101,13 @@ sequenceDiagram
 
     B->>F: メールアドレス・パスワード入力
     F->>API: POST /api/auth/login
-    API->>API: パスワード照合 (bcrypt)
-    API->>API: Access Token 生成 (JWT, 15分)
-    API->>API: Refresh Token 生成 (JWT, 7日)
+    API->>API: パスワード照合 bcrypt
+    API->>API: Access Token 生成 JWT 15分
+    API->>API: Refresh Token 生成 JWT 7日
     API-->>F: 200 access_token
-    Note over API,F: Set-Cookie: refresh_token<br/>HttpOnly / SameSite=Lax
+    Note over API,F: Set-Cookie refresh_token<br/>HttpOnly SameSite=Lax
     F->>F: access_token をメモリに保存
-    F->>API: GET /api/auth/me<br/>Authorization: Bearer token
+    F->>API: GET /api/auth/me<br/>Authorization Bearer token
     API-->>F: 200 user情報
     F->>B: ダッシュボード表示
 ```
@@ -119,15 +119,15 @@ sequenceDiagram
     participant F as Frontend
     participant API as Backend API
 
-    Note over F: リロード → メモリの access_token が消える
-    F->>API: POST /api/auth/refresh<br/>(Cookie: refresh_token が自動送信)
+    Note over F: リロード時はメモリの access_token が消える
+    F->>API: POST /api/auth/refresh<br/>Cookie refresh_token は自動送信
     API->>API: refresh_token を検証
     API->>API: 新しい Access Token 生成
     API->>API: 新しい Refresh Token 生成
     API-->>F: 200 新 access_token
-    Note over API,F: Set-Cookie: refresh_token=新token<br/>(トークンローテーション)
+    Note over API,F: Set-Cookie refresh_token=新token<br/>トークンローテーション
     F->>F: 新 access_token をメモリに保存
-    F->>API: GET /api/auth/me (Bearer 新token)
+    F->>API: GET /api/auth/me Bearer 新token
     API-->>F: 200 user情報
     Note over F: セッション復元完了
 ```
@@ -140,13 +140,13 @@ sequenceDiagram
     participant Int as axios interceptor
     participant API as Backend API
 
-    F->>API: GET /api/task/ (期限切れ access_token)
+    F->>API: GET /api/task/ 期限切れ access_token
     API-->>Int: 401 Unauthorized
-    Int->>API: POST /api/auth/refresh<br/>(Cookie 自動送信)
-    API-->>Int: 200 { 新 access_token }
+    Int->>API: POST /api/auth/refresh<br/>Cookie 自動送信
+    API-->>Int: 200 新 access_token
     Int->>Int: メモリに保存
-    Int->>API: GET /api/task/ (新 access_token で再試行)
-    API-->>F: 200 { tasks }
+    Int->>API: GET /api/task/ 新 access_token で再試行
+    API-->>F: 200 tasks
     Note over F: ユーザーはエラーに気づかない
 ```
 
@@ -157,13 +157,13 @@ sequenceDiagram
     participant F as Frontend
     participant API as Backend API
 
-    F->>API: GET /api/auth/csrf-token<br/>Authorization: Bearer token
+    F->>API: GET /api/auth/csrf-token<br/>Authorization Bearer token
     API->>API: UUID でトークン生成
-    API-->>F: { token: "uuid-..." }
-    Note over API,F: Set-Cookie: csrf_token=uuid-...<br/>HttpOnly; Secure
-    F->>API: POST /api/task/<br/>Authorization: Bearer token<br/>X-CSRF-Token: uuid-...<br/>(Cookie: csrf_token も自動送信)
+    API-->>F: 200 token uuid
+    Note over API,F: Set-Cookie csrf_token=uuid<br/>HttpOnly Secure
+    F->>API: POST /api/task/<br/>Authorization Bearer token<br/>X-CSRF-Token uuid<br/>Cookie csrf_token も自動送信
     API->>API: ヘッダーの token と<br/>Cookie の token が一致するか検証
-    API-->>F: 201 { task }
+    API-->>F: 201 task
 ```
 
 ### 認可 (ロールベースアクセス制御)
