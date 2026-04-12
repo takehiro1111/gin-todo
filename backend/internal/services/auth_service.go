@@ -3,7 +3,6 @@ package services
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"time"
 
 	appErr "github.com/takehiro1111/gin-todo/backend/internal/errors"
@@ -16,8 +15,8 @@ type AuthService interface {
 	Register(ctx context.Context, name, email, password string) (string, error)
 	Login(ctx context.Context, email, password string) (string, string, error)
 	RefreshToken(ctx context.Context, refreshToken string) (*TokenPair, error)
-	GetMe(ctx context.Context, userID string) (*models.User, error)
-	ChangePassword(ctx context.Context, userID, oldPassword, newPassword string) error
+	GetMe(ctx context.Context, userID uint) (*models.User, error)
+	ChangePassword(ctx context.Context, userID uint, oldPassword, newPassword string) error
 	ForgotPassword(ctx context.Context, email string) error
 	ResetPassword(ctx context.Context, resetToken, newPassword string) error
 }
@@ -66,7 +65,7 @@ func (s *AuthServiceImpl) Register(ctx context.Context, name, email, password st
 	}
 
 	if user != nil {
-		return "", fmt.Errorf("This email address is already registered")
+		return "", fmt.Errorf("email already registered: %w", appErr.ErrAlreadyExists)
 	}
 
 	hashedPassword, err := s.passwordManager.HashPassword(password)
@@ -112,12 +111,12 @@ func (s *AuthServiceImpl) Login(ctx context.Context, email, password string) (st
 	}
 
 	if user == nil {
-		return "", "", fmt.Errorf("invalid credentials")
+		return "", "", fmt.Errorf("user not found: %w", appErr.ErrUserNotFound)
 	}
 
 	err = s.passwordManager.CheckPassword(user.PasswordHash, password)
 	if err != nil {
-		return "", "", fmt.Errorf("failed to check password: %w", err)
+		return "", "", fmt.Errorf("invalid credentials: %w", appErr.ErrUnauthorized)
 	}
 
 	// JWT生成
@@ -166,7 +165,7 @@ func (s *AuthServiceImpl) RefreshToken(ctx context.Context, refreshToken string)
 	}
 
 	if user == nil {
-		return nil, fmt.Errorf("user not found")
+		return nil, fmt.Errorf("user not found: %w", appErr.ErrUserNotFound)
 	}
 
 	now := s.timeProvider.Now()
@@ -203,13 +202,8 @@ func (s *AuthServiceImpl) RefreshToken(ctx context.Context, refreshToken string)
 	return tokenPair, nil
 }
 
-func (s *AuthServiceImpl) GetMe(ctx context.Context, userID string) (*models.User, error) {
-	toUintUserID, err := strconv.ParseUint(userID, 10, 64)
-	if err != nil {
-		return nil, fmt.Errorf("failed to cast userID  : %w", err)
-	}
-
-	user, err := s.userRepo.FindByID(ctx, uint(toUintUserID))
+func (s *AuthServiceImpl) GetMe(ctx context.Context, userID uint) (*models.User, error) {
+	user, err := s.userRepo.FindByID(ctx, userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find user: %w", err)
 	}
@@ -221,20 +215,15 @@ func (s *AuthServiceImpl) GetMe(ctx context.Context, userID string) (*models.Use
 	return user, nil
 }
 
-func (s *AuthServiceImpl) ChangePassword(ctx context.Context, userID, oldPassword, newPassword string) error {
-	toUintUserID, err := strconv.ParseUint(userID, 10, 64)
-	if err != nil {
-		return fmt.Errorf("failed to cast userID  : %w", err)
-	}
-
-	user, err := s.userRepo.FindByID(ctx, uint(toUintUserID))
+func (s *AuthServiceImpl) ChangePassword(ctx context.Context, userID uint, oldPassword, newPassword string) error {
+	user, err := s.userRepo.FindByID(ctx, userID)
 	if err != nil {
 		return fmt.Errorf("failed to find user: %w", err)
 	}
 
 	err = s.passwordManager.CheckPassword(user.PasswordHash, oldPassword)
 	if err != nil {
-		return fmt.Errorf("failed to check password: %w", err)
+		return fmt.Errorf("invalid old password: %w", appErr.ErrUnauthorized)
 	}
 
 	hashedNewPassword, err := s.passwordManager.HashPassword(newPassword)
@@ -242,7 +231,7 @@ func (s *AuthServiceImpl) ChangePassword(ctx context.Context, userID, oldPasswor
 		return fmt.Errorf("failed to hash password: %w", err)
 	}
 
-	err = s.userRepo.UpdatePassword(ctx, uint(toUintUserID), hashedNewPassword)
+	err = s.userRepo.UpdatePassword(ctx, userID, hashedNewPassword)
 	if err != nil {
 		return fmt.Errorf("failed to update password: %w", err)
 	}
@@ -258,7 +247,7 @@ func (s *AuthServiceImpl) ForgotPassword(ctx context.Context, email string) erro
 	}
 
 	if user == nil {
-		return fmt.Errorf("user not found")
+		return fmt.Errorf("user not found: %w", appErr.ErrUserNotFound)
 	}
 
 	now := s.timeProvider.Now()
@@ -294,19 +283,19 @@ func (s *AuthServiceImpl) ResetPassword(ctx context.Context, resetToken, newPass
 	}
 
 	if token == nil {
-		return fmt.Errorf("invalid reset token")
+		return fmt.Errorf("invalid reset token: %w", appErr.ErrNotFound)
 	}
 
 	now := s.timeProvider.Now()
 
 	// リセットトークンの期限をチェック
 	if now.After(token.ExpiresAt) {
-		return fmt.Errorf("reset token expired")
+		return fmt.Errorf("reset token expired: %w", appErr.ErrInvalidInput)
 	}
 
 	// 使用済みチェック
 	if token.UsedAt != nil {
-		return fmt.Errorf("reset token already used")
+		return fmt.Errorf("reset token already used: %w", appErr.ErrInvalidInput)
 	}
 
 	// パスワードのハッシュ化
