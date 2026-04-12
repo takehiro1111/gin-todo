@@ -1,6 +1,11 @@
-# Gin Todo Infrastructure (AWS CDK)
+---
+paths:
+  - "infra/**/*.ts"
+---
 
-## Architecture
+# Infrastructure Architecture Rules
+
+## 全体構成
 
 ```
 Route53 (todo.takehiro1111.com)
@@ -82,21 +87,7 @@ VPC 10.0.0.0/16
   └── Private Subnet 10.0.3.0/24 (AZ-c) — ECS, RDS
 ```
 
-## Stack 構成
-
-依存方向: `SsmLocal` / `Dns` / `Network` → `Data` → `SsmProduction` / `Compute` → `CDN`
-
-| Stack | CloudFormation 名 | リソース | 変更頻度 |
-|-------|-------------------|---------|---------|
-| SsmLocalStack | `GinTodoSsmStack` | SSM Parameter Store (ローカル開発用) | 低 |
-| DnsStack | `GinTodoDnsStack` | Route53 Public Hosted Zone | 低 |
-| NetworkStack | `GinTodoNetworkStack` | VPC, Public/Private Subnet (2AZ), NAT Gateway | 低 |
-| DataStack | `GinTodoDataStack` | RDS PostgreSQL 16.4, S3 (静的アセット), SES EmailIdentity | 低 |
-| SsmStack | `GinTodoSsmProductionStack` | SSM Parameter Store (本番用, RDS エンドポイント動的設定) | 低 |
-| ComputeStack | `GinTodoComputeStack` | ALB (internal) + ECS Fargate (Frontend + Backend), ECR x2, Service Connect, Auto Scaling, CloudWatch Alarms (6), SNS | 高 |
-| CdnStack | `GinTodoCdnStack` | CloudFront (VPC Origin + S3 OAC), Route53 A/AAAA, ACM Certificate (us-east-1) | 中 |
-
-## プロジェクト構成
+## CDK プロジェクト構成
 
 ```
 infra/cdk/
@@ -120,14 +111,29 @@ infra/cdk/
 │   ├── env.ts                      # パブリック値 (Git 管理)
 │   └── secret.ts                   # シークレット (.gitignore)
 ├── test/cdk.test.ts                # Vitest テスト
-├── vitest.config.ts                # Vitest 設定 (@/ エイリアス解決)
-├── cdk.json
-└── package.json                    # pnpm 管理
+└── vitest.config.ts                # Vitest 設定 (@/ エイリアス解決)
 ```
 
-## 設計方針
+### Stack と Module の役割分担
 
-### L2/L3 Construct の積極使用
+| 層 | 役割 | 例 |
+|----|------|-----|
+| **Stack** (`lib/stacks/`) | Module を組み合わせてデプロイ単位を構成。Module 間の依存を配線する | `NetworkStack` が `VpcModule` を使い、`vpc` を public プロパティで公開 |
+| **Module** (`lib/modules/`) | 単一の責務を持つ再利用可能な Construct。Props で設定を受け取る | `RdsModule` は VPC と Security Group を Props で受け取り、RDS インスタンスを作る |
+
+### Module 設計の原則
+
+- **1 Module = 1 責務**: VPC、RDS、ECS など AWS サービス単位で分ける
+- **Props で依存を注入**: 他の Module のリソースは Props で受け取る (import しない)
+- **public プロパティで公開**: 他 Module が参照するリソースは public readonly で公開
+- **Module 内で完結させる**: Security Group やサブネットグループなど付随リソースは Module 内で作る
+- **Module 同士は直接参照しない**: Stack が配線役を担う
+
+## Construct レベルの方針
+
+**L2/L3 Construct を積極的に使用する。** L1 (`Cfn*`) は L2/L3 で対応できない場合のみ。
+
+### 現在使用している L2/L3
 
 | Construct | レベル | 用途 |
 |-----------|-------|------|
@@ -144,27 +150,62 @@ infra/cdk/
 | `rds.DatabaseInstance` | L2 | RDS インスタンス |
 | `ec2.Vpc` + `IpAddresses.cidr()` | L2 | VPC (CIDR 明示指定) |
 
-L1 (`Cfn*`) は L2/L3 で対応できない場合のみ使用する。
+## Stack 分割方針
 
-### Stack と Module の分離
+**3つの軸** で分割を判断する:
 
-- **Stack** (`lib/stacks/`): Module を組み合わせてデプロイ単位を構成。Module 間の依存を配線する
-- **Module** (`lib/modules/`): 単一責務の Construct。Props で依存を受け取り、public プロパティで公開する
+1. **ライフサイクル (変更頻度)** — 変更頻度が近いリソースを同じ Stack に
+2. **依存方向** — 循環依存を作らない。必ず上→下の一方向
+3. **破壊の影響範囲** — `cdk destroy` でデータが消えるリソース (RDS, S3) は Compute と分離する
 
-### Stack 分割の判断基準
+依存方向: `SsmLocal` / `Dns` / `Network` → `Data` → `SsmProduction` / `Compute` → `CDN`
 
-1. **ライフサイクル**: 変更頻度が近いリソースを同じ Stack に
-2. **依存方向**: 循環依存を作らない (上→下の一方向)
-3. **破壊の影響範囲**: ステートフルリソース (RDS, S3, ECR) は Compute と分離
+| Stack | CloudFormation 名 | リソース | 変更頻度 |
+|-------|-------------------|---------|---------|
+| SsmLocalStack | `GinTodoSsmStack` | SSM Parameter Store (ローカル開発用) | 低 |
+| DnsStack | `GinTodoDnsStack` | Route53 Public Hosted Zone | 低 |
+| NetworkStack | `GinTodoNetworkStack` | VPC, Public/Private Subnet (2AZ), NAT Gateway | 低 |
+| DataStack | `GinTodoDataStack` | RDS PostgreSQL 16.4, S3 (静的アセット), SES EmailIdentity | 低 |
+| SsmStack | `GinTodoSsmProductionStack` | SSM Parameter Store (本番用, RDS エンドポイント動的設定) | 低 |
+| ComputeStack | `GinTodoComputeStack` | ALB (internal) + ECS Fargate (Frontend + Backend), ECR x2, Service Connect, Auto Scaling, CloudWatch Alarms (6), SNS | 高 |
+| CdnStack | `GinTodoCdnStack` | CloudFront (VPC Origin + S3 OAC), Route53 A/AAAA, ACM Certificate (us-east-1) | 中 |
 
-### SSM パラメータ管理
+**原則:**
+- Stack 間の参照は props で渡す
+- Security Group はそれを使うリソースと同じ Stack に入れる (ライフサイクルで判断)
+- ステートフルリソース (RDS, S3, ECR) には `removalPolicy: RemovalPolicy.RETAIN` を設定する
+
+## SSM パラメータ管理
 
 | Stack | 用途 | RDS ホスト |
 |-------|------|-----------|
 | `SsmLocalStack` | ローカル開発 | `localhost` |
 | `SsmStack` | 本番 | RDS エンドポイント (動的取得) |
 
-### セキュリティ
+## import パス
+
+- `@/` エイリアスを使用 (例: `import { ENV } from '@/env/env.js'`)
+- `tsconfig.json` の `paths` で TypeScript に認識させる (`baseUrl` 不要、TS 5.x+)
+- `vitest.config.ts` の `resolve.alias` で Vitest 実行時に解決
+
+## 命名規約
+
+| 対象 | パターン | 例 |
+|------|---------|-----|
+| Stack クラス名 | `{Category}Stack` | `NetworkStack` |
+| Stack ID (bin/cdk.ts) | `GinTodo` + クラス名 | `'GinTodoNetworkStack'` |
+| Construct 論理 ID | PascalCase、リソース種別を含める | `'ApiTaskDefinition'` |
+| SSM パラメータ名 | `/gin-todo/{category}/{name}` | `/gin-todo/db/postgres-user` |
+
+## 環境管理
+
+- `env/env.ts` にパブリックなパラメータを集約 (Git 管理)
+- `env/secret.ts` にシークレット値を分離 (.gitignore で Git 管理外)
+- RDS パスワードは `Credentials.fromPassword()` で SSM 管理のパスワードを使用
+- 本番 SSM は RDS エンドポイントを動的取得 (`rdsInstance.dbInstanceEndpointAddress`)
+- 複数環境 (dev/staging/prod) が必要になったら `env/` を分割する
+
+## セキュリティ
 
 - ALB: internal (VPC Origin 経由のみ)
 - RDS: パブリックアクセス無効、Private Subnet 配置、ストレージ暗号化有効
@@ -175,88 +216,23 @@ L1 (`Cfn*`) は L2/L3 で対応できない場合のみ使用する。
 - CloudFront: HTTPS リダイレクト、WebSocket パス (`/api/ws/*`) 対応
 - SSL: 本番 RDS 接続は `ssl-mode=require`
 
-### 監視
+## 監視
 
 CloudWatch Alarms (6件) → SNS Topic:
 - ECS: CPU 使用率 > 80%、メモリ使用率 > 80%
 - ALB: 5xx エラー > 10/min
 - RDS: CPU 使用率 > 80%、空きストレージ <= 5GB、接続数 > 50
 
-### ステートフルリソースの保護
+## テスト
 
-RDS, S3, ECR には `removalPolicy: RETAIN` を設定。
-RDS には `deletionProtection: true` も設定。
-`cdk destroy` でもデータは削除されない。
+- Vitest でテストを実行する (`pnpm test`)
+- `Template.fromStack()` で CloudFormation テンプレートのアサーションテストを書く
+- クロススタック循環参照を避けるため、テストでは Module を同一スタック内に配置する
+- ARN はハードコードせず `Stack.formatArn()` を使用する
 
-## コマンド
+## デプロイ時の注意
 
-```bash
-# infra/cdk/ で実行
-
-# 依存インストール
-pnpm install
-
-# CloudFormation テンプレート生成 (デプロイ前の確認)
-npx cdk synth
-
-# 現在のスタックとの差分表示
-npx cdk diff
-
-# 全スタックデプロイ
-npx cdk deploy --all
-
-# 個別スタックデプロイ (依存順)
-npx cdk deploy GinTodoDnsStack
-npx cdk deploy GinTodoNetworkStack
-npx cdk deploy GinTodoDataStack
-npx cdk deploy GinTodoSsmProductionStack
-npx cdk deploy GinTodoComputeStack
-npx cdk deploy GinTodoCdnStack
-
-# テスト
-pnpm test
-
-# スタック削除 (ステートフルリソースは RETAIN)
-npx cdk destroy --all
-```
-
-## 初回デプロイ手順
-
-```bash
-# 1. CDK Bootstrap (初回のみ)
-npx cdk bootstrap aws://ACCOUNT_ID/ap-northeast-1
-
-# 2. env/secret.ts を作成 (シークレット値を設定)
-cp env/secret.example.ts env/secret.ts
-
-# 3. DNS スタックを先にデプロイ
-npx cdk deploy GinTodoDnsStack
-# → 出力される NS レコードをドメインレジストラに設定
-
-# 4. 差分確認
-npx cdk diff
-
-# 5. デプロイ (依存順に自動解決される)
-npx cdk deploy --all
-
-# 6. ECS コンテナイメージの差し替え
-#    初回は amazon/amazon-ecs-sample がデプロイされる
-#    CI/CD パイプラインで ECR イメージに差し替える
-```
-
-## 環境変数・シークレット
-
-| ファイル | Git 管理 | 内容 |
-|---------|---------|------|
-| `env/env.ts` | する | パブリックなパラメータ (リージョン, ドメイン, ECS スペック等) |
-| `env/secret.ts` | しない (.gitignore) | パスワード, JWT キー |
-
-| SSM パラメータ (本番) | 用途 |
-|----------------------|------|
-| `/gin-todo/db/postgres-user` | DB ユーザー名 |
-| `/gin-todo/db/postgres-password` | DB パスワード |
-| `/gin-todo/db/postgres-db-name` | DB 名 |
-| `/gin-todo/db/postgres-db-host` | DB ホスト (RDS エンドポイント, 動的設定) |
-| `/gin-todo/db/postgres-db-port` | DB ポート |
-| `/gin-todo/db/postgres-ssl-mode` | SSL モード (`require`) |
-| `/gin-todo/db/jwt-secret-key` | JWT 署名キー |
+- `cdk diff` で差分を必ず確認してからデプロイする
+- ステートフルリソース (RDS, S3, ECR) には `removalPolicy: RemovalPolicy.RETAIN` を設定する
+- RDS には `deletionProtection: true` も設定する
+- `cdk deploy` と `cdk destroy` は破壊的操作のため、Claude Code の自動許可には入れない (都度確認)

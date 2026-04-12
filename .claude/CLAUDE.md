@@ -10,7 +10,7 @@ Go + Gin バックエンド と React フロントエンド によるタスク�
 gin-todo/
 ├── backend/          # Go + Gin API server (port 8080)
 ├── frontend/         # React + TypeScript SPA (port 3000)
-├── infra/cdk/        # AWS CDK (TypeScript) — SSM Parameter Store 等
+├── infra/cdk/        # AWS CDK (TypeScript) — VPC / RDS / ECS / CloudFront
 └── compose.yaml      # ローカル開発: PostgreSQL, Adminer, SES local
 ```
 
@@ -47,8 +47,11 @@ pnpm test --run                 # テスト (1回実行)
 ### Infrastructure (`infra/cdk/` で実行)
 
 ```bash
+pnpm install                    # 依存インストール
+pnpm test                       # Vitest テスト
 npx cdk synth                   # CloudFormation テンプレート生成
-npx cdk deploy                  # デプロイ (ap-northeast-1)
+npx cdk diff                    # 現在のスタックとの差分表示
+npx cdk deploy --all            # 全スタックデプロイ (ap-northeast-1)
 ```
 
 ---
@@ -76,8 +79,21 @@ npx cdk deploy                  # デプロイ (ap-northeast-1)
 - Vitest + Testing Library (テスト)
 
 ### Infrastructure
-- AWS CDK (TypeScript) — SSM Parameter Store でシークレット管理
-- デプロイ先: ap-northeast-1 (東京)
+- AWS CDK (TypeScript) — L2/L3 Construct を積極使用、import は `@/` エイリアス
+- CloudFront (VPC Origin + S3 OAC) → ALB (internal) → ECS Fargate (Frontend + Backend)
+- VPC (10.0.0.0/16) + Public/Private Subnet (2AZ) + NAT Gateway
+- RDS PostgreSQL 16.4 + S3 (静的アセット) + ECR Repository x2
+- Route53 Public Hosted Zone + ACM (todo.takehiro1111.com → CloudFront)
+- SES EmailIdentity (パスワードリセットメール)
+- ECS Service Connect (gin-todo.local 名前空間、Frontend → Backend)
+- ECS Auto Scaling (CPU ターゲット追跡)
+- CloudWatch Alarms (6件) → SNS (ECS CPU/メモリ、ALB 5xx、RDS CPU/ストレージ/接続数)
+- RDS パスワード: `Credentials.fromPassword()` (SSM 管理)
+- SSM Parameter Store: ローカル用 (`SsmLocalStack`) + 本番用 (`SsmStack`, RDS エンドポイント動的取得)
+- IAM: SSM 読み取り + SES 送信 (ドメイン Identity に制限)
+- env/env.ts (パブリック値、Git 管理) + env/secret.ts (シークレット、.gitignore)
+- Vitest (テスト) / pnpm (パッケージ管理)
+- デプロイ先: ap-northeast-1 (東京)、ドメイン: todo.takehiro1111.com
 
 ---
 

@@ -32,6 +32,33 @@ services:
       gin-todo-postgres:
         condition: service_healthy
 
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: gin-todo-backend
+    ports:
+      - "8080:8080"
+    env_file:
+      - ./backend/.env
+    networks:
+      - todo-network
+    depends_on:
+      gin-todo-postgres:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: gin-todo-frontend
+    ports:
+      - "3000:3000"
+    networks:
+      - todo-network
+    depends_on:
+      - backend
+
   ses-local:
     image: oven/bun
     command: bunx aws-ses-v2-local@2.5.1 --host=0.0.0.0
