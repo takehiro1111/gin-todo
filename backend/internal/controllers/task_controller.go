@@ -39,17 +39,17 @@ func NewTaskControllerImpl(taskService services.TaskService, timeProvider *utils
 
 type CreateRequest struct {
 	Title       string     `json:"title" required:"true" maxLength:"100" doc:"タスクタイトル"`
-	Description string     `json:"description" maxLength:"300" doc:"タスク説明"`
-	StatusID    int64      `json:"status_id" doc:"ステータスID"`
-	Priority    string     `json:"priority" doc:"優先度"`
+	Description string     `json:"description,omitempty" maxLength:"300" doc:"タスク説明"`
+	StatusID    *int64     `json:"status_id,omitempty" doc:"ステータスID"`
+	Priority    string     `json:"priority,omitempty" doc:"優先度"`
 	DueDate     *time.Time `json:"due_date,omitempty" doc:"期限"`
 }
 
 type UpdateRequest struct {
 	Title       string     `json:"title" required:"true" maxLength:"100" doc:"タスクタイトル"`
-	Description string     `json:"description" maxLength:"100" doc:"タスク説明"`
-	StatusID    int64      `json:"status_id" doc:"ステータスID"`
-	Priority    string     `json:"priority" doc:"優先度"`
+	Description string     `json:"description,omitempty" maxLength:"100" doc:"タスク説明"`
+	StatusID    *int64     `json:"status_id,omitempty" doc:"ステータスID"`
+	Priority    string     `json:"priority,omitempty" doc:"優先度"`
 	DueDate     *time.Time `json:"due_date,omitempty" doc:"期限"`
 }
 
@@ -125,11 +125,16 @@ func (t *TaskControllerImpl) CreateTask(ctx context.Context, input *CreateTaskIn
 		return nil, huma.Error401Unauthorized("invalid user access")
 	}
 
+	var statusID int64 = 1 // デフォルト: todo
+	if input.Body.StatusID != nil {
+		statusID = *input.Body.StatusID
+	}
+
 	task := &models.Task{
 		UserID:      userID,
 		Title:       input.Body.Title,
 		Description: input.Body.Description,
-		StatusID:    input.Body.StatusID,
+		StatusID:    statusID,
 		Priority:    input.Body.Priority,
 		DueDate:     input.Body.DueDate,
 	}
@@ -169,12 +174,17 @@ func (t *TaskControllerImpl) UpdateTask(ctx context.Context, input *UpdateTaskIn
 		return nil, huma.Error401Unauthorized("invalid user access")
 	}
 
+	var statusID int64
+	if input.Body.StatusID != nil {
+		statusID = *input.Body.StatusID
+	}
+
 	task := &models.Task{
 		BaseModel:   models.BaseModel{ID: input.ID},
 		UserID:      userID,
 		Title:       input.Body.Title,
 		Description: input.Body.Description,
-		StatusID:    input.Body.StatusID,
+		StatusID:    statusID,
 		Priority:    input.Body.Priority,
 		DueDate:     input.Body.DueDate,
 	}

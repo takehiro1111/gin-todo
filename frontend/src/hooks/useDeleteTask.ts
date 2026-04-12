@@ -10,8 +10,9 @@ export function useDeleteTask() {
 
   return useMutation({
     mutationFn: (id: number) => taskApi.delete(id),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['tasks'] })
+    onSuccess: async (_data, id) => {
+      queryClient.removeQueries({ queryKey: ['tasks', id] })
+      await queryClient.invalidateQueries({ queryKey: ['tasks'], exact: true })
       toast.success('タスクを削除しました')
     },
     onError: () => {

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	appErr "github.com/takehiro1111/gin-todo/backend/internal/errors"
 	"github.com/takehiro1111/gin-todo/backend/internal/models"
 	"gorm.io/gorm"
 )
@@ -44,7 +45,7 @@ func (r *userRepositoryImpl) FindByID(ctx context.Context, id uint) (*models.Use
 	user, err := gorm.G[models.User](r.db).Where("id = ?", id).First(ctx)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("user not found by ID")
+			return nil, appErr.ErrUserNotFound
 		}
 		return nil, fmt.Errorf("failed to find user by ID: %v", err)
 	}
@@ -56,7 +57,7 @@ func (r *userRepositoryImpl) FindByName(ctx context.Context, name string) (*mode
 	user, err := gorm.G[models.User](r.db).Where("name = ?", name).First(ctx)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("user not found by Name")
+			return nil, appErr.ErrUserNotFound
 		}
 		return nil, fmt.Errorf("failed to find user by Name: %v", err)
 	}
@@ -99,7 +100,7 @@ func (r *userRepositoryImpl) Update(ctx context.Context, user *models.User) erro
 	_, err := gorm.G[models.User](r.db).Where("id = ?", user.ID).Updates(ctx, *user)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New("user not found by id")
+			return appErr.ErrUserNotFound
 		}
 		return fmt.Errorf("failed to find user by id: %v", err)
 	}
@@ -111,7 +112,7 @@ func (r *userRepositoryImpl) UpdatePassword(ctx context.Context, id uint, hashed
 	_, err := gorm.G[models.User](r.db).Where("id = ?", id).Update(ctx, "PasswordHash", hashedNewPassword)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New("user not found by id")
+			return appErr.ErrUserNotFound
 		}
 		return fmt.Errorf("failed to find user by id: %v", err)
 	}
@@ -123,7 +124,7 @@ func (r *userRepositoryImpl) Delete(ctx context.Context, id uint) error {
 	_, err := gorm.G[models.User](r.db).Where("id = ?", id).Delete(ctx)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New("user not found by id")
+			return appErr.ErrUserNotFound
 		}
 		return fmt.Errorf("failed to find user by id: %v", err)
 	}

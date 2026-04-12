@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	appErr "github.com/takehiro1111/gin-todo/backend/internal/errors"
 	"github.com/takehiro1111/gin-todo/backend/internal/models"
 	"gorm.io/gorm"
 )
@@ -40,7 +41,7 @@ func (r *taskRepositoryImpl) FindByID(ctx context.Context, id, userID uint) (*mo
 	task, err := gorm.G[models.Task](r.db).Where("id = ? AND user_id = ?", id, userID).First(ctx)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("task not found by id")
+			return nil, appErr.ErrNotFound
 		}
 		return nil, fmt.Errorf("failed to find task by id: %v", err)
 	}
@@ -52,7 +53,7 @@ func (r *taskRepositoryImpl) FindByUserID(ctx context.Context, userID uint) ([]m
 	tasks, err := gorm.G[models.Task](r.db).Where("user_id = ?", userID).Find(ctx)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("task not found by userID")
+			return nil, appErr.ErrNotFound
 		}
 		return nil, fmt.Errorf("failed to find task by userID: %v", err)
 	}
@@ -73,7 +74,7 @@ func (r *taskRepositoryImpl) Update(ctx context.Context, task *models.Task) erro
 	_, err := gorm.G[models.Task](r.db).Where("id = ? AND user_id = ?", task.ID, task.UserID).Updates(ctx, *task)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New("task not found by id")
+			return appErr.ErrNotFound
 		}
 		return fmt.Errorf("failed to find task by id: %v", err)
 	}
@@ -85,7 +86,7 @@ func (r *taskRepositoryImpl) UpdateStatus(ctx context.Context, id, userID uint, 
 	_, err := gorm.G[models.Task](r.db).Where("id = ? AND user_id = ?", id, userID).Update(ctx, "status_id", statusID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New("status not found by id")
+			return appErr.ErrNotFound
 		}
 		return fmt.Errorf("failed to find status by id: %v", err)
 	}
@@ -97,7 +98,7 @@ func (r *taskRepositoryImpl) Delete(ctx context.Context, id, userID uint) error 
 	_, err := gorm.G[models.Task](r.db).Where("id = ? AND user_id = ?", id, userID).Delete(ctx)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New("task not found by id")
+			return appErr.ErrNotFound
 		}
 		return fmt.Errorf("failed to find task by id: %v", err)
 	}

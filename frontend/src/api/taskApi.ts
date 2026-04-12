@@ -17,6 +17,8 @@ async function getCsrfToken(): Promise<string> {
  */
 function toRFC3339OrUndefined(dateStr: string | undefined): string | undefined {
   if (!dateStr) return undefined
+  // 既に RFC 3339 形式（T を含む）ならそのまま返す
+  if (dateStr.includes('T')) return dateStr
   return `${dateStr}T00:00:00Z`
 }
 

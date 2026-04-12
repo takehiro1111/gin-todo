@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	appErr "github.com/takehiro1111/gin-todo/backend/internal/errors"
 	"github.com/takehiro1111/gin-todo/backend/internal/models"
 	"gorm.io/gorm"
 )
@@ -36,6 +37,9 @@ func (r *passwordResetTokenRepositoryImpl) Create(ctx context.Context, resetToke
 func (r *passwordResetTokenRepositoryImpl) FindByToken(ctx context.Context, newResetToken string) (*models.PasswordResetToken, error) {
 	token, err := gorm.G[models.PasswordResetToken](r.db).Where("reset_token = ?", newResetToken).First(ctx)
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, appErr.ErrNotFound
+		}
 		return nil, fmt.Errorf("failed to find password reset token: %v", err)
 	}
 
@@ -46,7 +50,7 @@ func (r *passwordResetTokenRepositoryImpl) UpdateUseAtByID(ctx context.Context, 
 	_, err := gorm.G[models.PasswordResetToken](r.db).Where("id = ?", id).Update(ctx, "UsedAt", now)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New("password reset token not found by id")
+			return appErr.ErrNotFound
 		}
 		return fmt.Errorf("failed to find reset token by id: %v", err)
 	}

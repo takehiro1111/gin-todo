@@ -228,7 +228,7 @@ func (a *AuthControllerImpl) GetMe(ctx context.Context, input *GetMeInput) (*Get
 		return nil, huma.Error401Unauthorized("invalid user access")
 	}
 
-	user, err := a.authService.GetMe(ctx, fmt.Sprintf("%d", userID))
+	user, err := a.authService.GetMe(ctx, userID)
 	if err != nil {
 		if errors.Is(err, appErr.ErrUserNotFound) {
 			return nil, huma.Error404NotFound("user not found")
@@ -265,7 +265,7 @@ func (a *AuthControllerImpl) ChangePassword(ctx context.Context, input *ChangePa
 		return nil, huma.Error400BadRequest("new password must be different from old password")
 	}
 
-	err := a.authService.ChangePassword(ctx, fmt.Sprintf("%d", userID), input.Body.OldPassword, input.Body.NewPassword)
+	err := a.authService.ChangePassword(ctx, userID, input.Body.OldPassword, input.Body.NewPassword)
 	if err != nil {
 		if errors.Is(err, appErr.ErrUnauthorized) {
 			return nil, huma.Error401Unauthorized("invalid old password")
