@@ -1,308 +1,255 @@
 package controllers
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
 
-	"github.com/gin-gonic/gin"
+	"github.com/danielgtaylor/huma/v2"
 
 	appErr "github.com/takehiro1111/gin-todo/backend/internal/errors"
+	"github.com/takehiro1111/gin-todo/backend/internal/middleware"
+	"github.com/takehiro1111/gin-todo/backend/internal/models"
 	"github.com/takehiro1111/gin-todo/backend/internal/services"
 	"github.com/takehiro1111/gin-todo/backend/internal/utils"
 	"github.com/takehiro1111/gin-todo/backend/internal/validators"
 )
 
 type AuthController interface {
-	Register(c *gin.Context)
-	Login(c *gin.Context)
-	RefreshToken(c *gin.Context)
-	Logout(c *gin.Context)
-	GetMe(c *gin.Context)
-	ChangePassword(c *gin.Context)
-	ForgotPassword(c *gin.Context)
-	ResetPassword(c *gin.Context)
+	Register(ctx context.Context, input *RegisterInput) (*RegisterOutput, error)
+	Login(ctx context.Context, input *LoginInput) (*LoginOutput, error)
+	RefreshToken(ctx context.Context, input *RefreshTokenInput) (*RefreshTokenOutput, error)
+	Logout(ctx context.Context, input *LogoutInput) (*LogoutOutput, error)
+	GetMe(ctx context.Context, input *GetMeInput) (*GetMeOutput, error)
+	ChangePassword(ctx context.Context, input *ChangePasswordInput) (*ChangePasswordOutput, error)
+	ForgotPassword(ctx context.Context, input *ForgotPasswordInput) (*ForgotPasswordOutput, error)
+	ResetPassword(ctx context.Context, input *ResetPasswordInput) (*ResetPasswordOutput, error)
+	GenerateCSRFToken(ctx context.Context, input *GenerateCSRFTokenInput) (*GenerateCSRFTokenOutput, error)
 }
 
 type AuthControllerImpl struct {
-	authService  services.AuthService
-	timeProvider *utils.RealTimeProvider
+	authService   services.AuthService
+	timeProvider  *utils.RealTimeProvider
+	uuidGenerator utils.UUIDGenerator
 }
 
-func NewAuthControllerImpl(authService services.AuthService, timeProvider *utils.RealTimeProvider) *AuthControllerImpl {
+func NewAuthControllerImpl(authService services.AuthService, timeProvider *utils.RealTimeProvider, uuidGenerator utils.UUIDGenerator) *AuthControllerImpl {
 	return &AuthControllerImpl{
-		authService:  authService,
-		timeProvider: timeProvider,
+		authService:   authService,
+		timeProvider:  timeProvider,
+		uuidGenerator: uuidGenerator,
 	}
 }
 
-// 認証系はカスタムバリーデーションを実装しているためrequiredのみ設定。
+// --- Request DTOs ---
+
 type RegisterRequest struct {
-	Name     string `json:"name" binding:"required"`
-	Email    string `json:"email" binding:"required"`
-	Password string `json:"password" binding:"required"`
+	Name     string `json:"name" required:"true" doc:"ユーザー名"`
+	Email    string `json:"email" required:"true" doc:"メールアドレス"`
+	Password string `json:"password" required:"true" doc:"パスワード"`
 }
 
 type LoginRequest struct {
-	Email    string `json:"email" binding:"required"`
-	Password string `json:"password" binding:"required"`
+	Email    string `json:"email" required:"true" doc:"メールアドレス"`
+	Password string `json:"password" required:"true" doc:"パスワード"`
 }
 
 type ChangePasswordRequest struct {
-	OldPassword string `json:"old_password" binding:"required"`
-	NewPassword string `json:"new_password" binding:"required"`
+	OldPassword string `json:"old_password" required:"true" doc:"現在のパスワード"`
+	NewPassword string `json:"new_password" required:"true" doc:"新しいパスワード"`
 }
 
 type ForgotPasswordRequest struct {
-	Email string `json:"email" binding:"required"`
+	Email string `json:"email" required:"true" doc:"メールアドレス"`
 }
 
 type ResetPasswordRequest struct {
-	ResetToken  string `json:"reset_token" binding:"required"`
-	NewPassword string `json:"new_password" binding:"required"`
+	ResetToken  string `json:"reset_token" required:"true" doc:"パスワードリセットトークン"`
+	NewPassword string `json:"new_password" required:"true" doc:"新しいパスワード"`
 }
 
-// Register godoc
-// @Summary      ユーザー登録
-// @Description  新規ユーザーを登録する
-// @Tags         auth
-// @Accept       json
-// @Produce      json
-// @Param        request body RegisterRequest true "登録情報"
-// @Success      201 {object} utils.SuccessResponse
-// @Failure      400 {object} utils.ErrorResponse
-// @Failure      500 {object} utils.ErrorResponse
-// @Router       /api/auth/register [post]
-func (a *AuthControllerImpl) Register(c *gin.Context) {
-	var req RegisterRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		// loggerを実装予定
-		utils.ResponseError(c, http.StatusBadRequest,
-			"invalid request",
-			err.Error(),
-			a.timeProvider,
-		)
-		return
-	}
+// --- Input / Output ---
 
+type RegisterInput struct {
+	Body RegisterRequest
+}
+type RegisterOutput struct {
+	Body SuccessBody[string]
+}
+
+type LoginInput struct {
+	Body LoginRequest
+}
+type LoginOutput struct {
+	SetCookie string `header:"Set-Cookie"`
+	Body      SuccessBody[map[string]string]
+}
+
+type RefreshTokenInput struct {
+	RefreshToken string `cookie:"refresh_token" doc:"リフレッシュトークン"`
+}
+type RefreshTokenOutput struct {
+	SetCookie string `header:"Set-Cookie"`
+	Body      SuccessBody[string]
+}
+
+type LogoutInput struct{}
+type LogoutOutput struct {
+	SetCookie string `header:"Set-Cookie"`
+	Body      SuccessBody[*struct{}]
+}
+
+type GetMeInput struct{}
+type GetMeOutput struct {
+	Body SuccessBody[*models.User]
+}
+
+type ChangePasswordInput struct {
+	Body ChangePasswordRequest
+}
+type ChangePasswordOutput struct {
+	Body SuccessBody[*struct{}]
+}
+
+type ForgotPasswordInput struct {
+	Body ForgotPasswordRequest
+}
+type ForgotPasswordOutput struct {
+	Body SuccessBody[*struct{}]
+}
+
+type ResetPasswordInput struct {
+	Body ResetPasswordRequest
+}
+type ResetPasswordOutput struct {
+	Body SuccessBody[*struct{}]
+}
+
+// --- CSRF ---
+
+type GenerateCSRFTokenInput struct{}
+type CSRFTokenBody struct {
+	Token string `json:"token" doc:"CSRFトークン"`
+}
+type GenerateCSRFTokenOutput struct {
+	SetCookie string `header:"Set-Cookie"`
+	Body      CSRFTokenBody
+}
+
+// --- Cookie helpers ---
+
+func refreshTokenCookie(value string, maxAge int) string {
+	cookie := &http.Cookie{
+		Name:     "refresh_token",
+		Value:    value,
+		MaxAge:   maxAge,
+		Path:     "/",
+		Secure:   true,
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+	}
+	return cookie.String()
+}
+
+// --- Handlers ---
+
+func (a *AuthControllerImpl) Register(ctx context.Context, input *RegisterInput) (*RegisterOutput, error) {
 	err := validators.NewAuthenticateValidator(
-		validators.WithEmail(req.Email),
-		validators.WithPassword(req.Password),
+		validators.WithEmail(input.Body.Email),
+		validators.WithPassword(input.Body.Password),
 	)
 	if err != nil {
-		utils.ResponseError(c, http.StatusBadRequest,
-			"failed to validation",
-			err.Error(),
-			a.timeProvider,
-		)
-		return
+		return nil, huma.Error400BadRequest("failed to validation", err)
 	}
 
-	token, err := a.authService.Register(c, req.Name, req.Email, req.Password)
-
+	token, err := a.authService.Register(ctx, input.Body.Name, input.Body.Email, input.Body.Password)
 	if err != nil {
-		utils.ResponseError(c, http.StatusInternalServerError,
-			"failed register",
-			err.Error(),
-			a.timeProvider,
-		)
-		return
+		if errors.Is(err, appErr.ErrAlreadyExists) {
+			return nil, huma.Error409Conflict("user already exists")
+		}
+		return nil, huma.Error500InternalServerError("failed register")
 	}
 
-	utils.ResponseSuccess(c, http.StatusCreated, "registered successfully", token, a.timeProvider)
+	return &RegisterOutput{
+		Body: NewSuccessBody("registered successfully", token, a.timeProvider),
+	}, nil
 }
 
-// Login godoc
-// @Summary      ログイン
-// @Description  メールアドレスとパスワードでログインする
-// @Tags         auth
-// @Accept       json
-// @Produce      json
-// @Param        request body LoginRequest true "ログイン情報"
-// @Success      200 {object} utils.SuccessResponse
-// @Failure      400 {object} utils.ErrorResponse
-// @Failure      401 {object} utils.ErrorResponse
-// @Router       /api/auth/login [post]
-func (a *AuthControllerImpl) Login(c *gin.Context) {
-	var req LoginRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		// loggerを実装予定
-		utils.ResponseError(c, http.StatusBadRequest,
-			"invalid request",
-			err.Error(),
-			a.timeProvider,
-		)
-		return
-	}
-
+func (a *AuthControllerImpl) Login(ctx context.Context, input *LoginInput) (*LoginOutput, error) {
 	err := validators.NewAuthenticateValidator(
-		validators.WithEmail(req.Email),
-		validators.WithPassword(req.Password),
+		validators.WithEmail(input.Body.Email),
+		validators.WithPassword(input.Body.Password),
 	)
 	if err != nil {
-		utils.ResponseError(c, http.StatusBadRequest,
-			"failed to validation",
-			err.Error(),
-			a.timeProvider,
-		)
-		return
+		return nil, huma.Error400BadRequest("failed to validation", err)
 	}
 
-	accessToken, refreshToken, err := a.authService.Login(c, req.Email, req.Password)
+	accessToken, refreshToken, err := a.authService.Login(ctx, input.Body.Email, input.Body.Password)
 	if err != nil {
-		utils.ResponseError(c, http.StatusUnauthorized,
-			"failed login",
-			err.Error(),
-			a.timeProvider,
-		)
-		return
+		if errors.Is(err, appErr.ErrUnauthorized) || errors.Is(err, appErr.ErrUserNotFound) {
+			return nil, huma.Error401Unauthorized("invalid email or password")
+		}
+		return nil, huma.Error500InternalServerError("internal server error")
 	}
 
-	// refresh_token は HttpOnly Cookie にセットし、レスポンスボディには含めない
-	c.SetSameSite(http.SameSiteLaxMode)
-	// c.SetCookie("refresh_token", refreshToken, 60*60*24*7, "/", "", true, true)
-	c.SetCookie("refresh_token", refreshToken, 60*60*24*7, "/", "", false, true)
-
-	utils.ResponseSuccess(c, http.StatusOK, "login successfully", map[string]string{"access_token": accessToken}, a.timeProvider)
+	return &LoginOutput{
+		SetCookie: refreshTokenCookie(refreshToken, 60*60*24*7),
+		Body:      NewSuccessBody("login successfully", map[string]string{"access_token": accessToken}, a.timeProvider),
+	}, nil
 }
 
-// RefreshToken godoc
-// @Summary      トークンリフレッシュ
-// @Description  リフレッシュトークンを使用して新しいアクセストークンを取得する
-// @Tags         auth
-// @Accept       json
-// @Produce      json
-// @Success      200 {object} utils.SuccessResponse
-// @Failure      401 {object} utils.ErrorResponse
-// @Failure      500 {object} utils.ErrorResponse
-// @Router       /api/auth/refresh [post]
-func (a *AuthControllerImpl) RefreshToken(c *gin.Context) {
-	// refresh_token は HttpOnly Cookie から読み取る
-	refreshToken, err := c.Cookie("refresh_token")
-	if err != nil {
-		utils.ResponseError(c, http.StatusUnauthorized,
-			"missing refresh token",
-			"refresh_token cookie not found",
-			a.timeProvider,
-		)
-		return
+func (a *AuthControllerImpl) RefreshToken(ctx context.Context, input *RefreshTokenInput) (*RefreshTokenOutput, error) {
+	if input.RefreshToken == "" {
+		return nil, huma.Error401Unauthorized("missing refresh token")
 	}
 
-	token, err := a.authService.RefreshToken(c, refreshToken)
+	token, err := a.authService.RefreshToken(ctx, input.RefreshToken)
 	if err != nil {
-		utils.ResponseError(c, http.StatusUnauthorized,
-			"failed generate refresh token",
-			err.Error(),
-			a.timeProvider,
-		)
-		return
+		return nil, huma.Error401Unauthorized("invalid or expired refresh token")
 	}
 
-	// 新しい refresh_token を HttpOnly Cookie にセットしてローテーションする
-	c.SetSameSite(http.SameSiteLaxMode)
-	c.SetCookie("refresh_token", token.RefreshToken, 60*60*24*7, "/", "", false, true)
-
-	utils.ResponseSuccess(c, http.StatusOK, "generate refresh token successfully", token.AccessToken, a.timeProvider)
+	return &RefreshTokenOutput{
+		SetCookie: refreshTokenCookie(token.RefreshToken, 60*60*24*7),
+		Body:      NewSuccessBody("generate refresh token successfully", token.AccessToken, a.timeProvider),
+	}, nil
 }
 
-// Logout godoc
-// @Summary      ログアウト
-// @Description  ログアウトする
-// @Tags         auth
-// @Accept       json
-// @Produce      json
-// @Success      200 {object} utils.SuccessResponse
-// @Security     BearerAuth
-// @Router       /api/auth/logout [post]
-func (a *AuthControllerImpl) Logout(c *gin.Context) {
-	// refresh_token Cookie を削除する (MaxAge=-1)
-	c.SetSameSite(http.SameSiteLaxMode)
-	c.SetCookie("refresh_token", "", -1, "/", "localhost", true, true)
-	utils.ResponseSuccess(c, http.StatusOK, "logout successfully", nil, a.timeProvider)
+func (a *AuthControllerImpl) Logout(ctx context.Context, input *LogoutInput) (*LogoutOutput, error) {
+	return &LogoutOutput{
+		SetCookie: refreshTokenCookie("", -1),
+		Body:      NewSuccessBody[*struct{}]("logout successfully", nil, a.timeProvider),
+	}, nil
 }
 
-// GetMe godoc
-// @Summary      ユーザー情報取得
-// @Description  ログイン中のユーザー情報を取得する
-// @Tags         auth
-// @Accept       json
-// @Produce      json
-// @Success      200 {object} utils.SuccessResponse
-// @Failure      401 {object} utils.ErrorResponse
-// @Failure      404 {object} utils.ErrorResponse
-// @Failure      500 {object} utils.ErrorResponse
-// @Security     BearerAuth
-// @Router       /api/auth/me [get]
-func (a *AuthControllerImpl) GetMe(c *gin.Context) {
-	userID, exist := c.Get("user_id")
-	if !exist {
-		utils.ResponseError(c, http.StatusUnauthorized,
-			"invalid user access",
-			"userID not found in context",
-			a.timeProvider,
-		)
-		return
+func (a *AuthControllerImpl) GetMe(ctx context.Context, input *GetMeInput) (*GetMeOutput, error) {
+	userID, ok := ctx.Value(middleware.UserIDKey).(uint)
+	if !ok {
+		return nil, huma.Error401Unauthorized("invalid user access")
 	}
 
-	user, err := a.authService.GetMe(c, fmt.Sprintf("%d", userID.(uint)))
+	user, err := a.authService.GetMe(ctx, fmt.Sprintf("%d", userID))
 	if err != nil {
 		if errors.Is(err, appErr.ErrUserNotFound) {
-			utils.ResponseError(c, http.StatusNotFound,
-				"user not found",
-				err.Error(),
-				a.timeProvider,
-			)
-			return
+			return nil, huma.Error404NotFound("user not found")
 		}
-		utils.ResponseError(c, http.StatusInternalServerError,
-			"failed get me by access token",
-			err.Error(),
-			a.timeProvider,
-		)
-		return
+		return nil, huma.Error500InternalServerError("internal server error")
 	}
 
-	utils.ResponseSuccess(c, http.StatusOK, "get me successfully", user, a.timeProvider)
+	return &GetMeOutput{
+		Body: NewSuccessBody("get me successfully", user, a.timeProvider),
+	}, nil
 }
 
-// ChangePassword godoc
-// @Summary      パスワード変更
-// @Description  ログイン中のユーザーのパスワードを変更する
-// @Tags         auth
-// @Accept       json
-// @Produce      json
-// @Param        request body ChangePasswordRequest true "パスワード変更情報"
-// @Success      200 {object} utils.SuccessResponse
-// @Failure      400 {object} utils.ErrorResponse
-// @Failure      401 {object} utils.ErrorResponse
-// @Failure      500 {object} utils.ErrorResponse
-// @Security     BearerAuth
-// @Router       /api/auth/password [patch]
-func (a *AuthControllerImpl) ChangePassword(c *gin.Context) {
-	userID, exist := c.Get("user_id")
-	if !exist {
-		utils.ResponseError(c, http.StatusUnauthorized,
-			"invalid user access",
-			"userID not found in context",
-			a.timeProvider,
-		)
-		return
-	}
-
-	var req ChangePasswordRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		// loggerを実装予定
-		utils.ResponseError(c, http.StatusBadRequest,
-			"invalid request",
-			err.Error(),
-			a.timeProvider,
-		)
-		return
+func (a *AuthControllerImpl) ChangePassword(ctx context.Context, input *ChangePasswordInput) (*ChangePasswordOutput, error) {
+	userID, ok := ctx.Value(middleware.UserIDKey).(uint)
+	if !ok {
+		return nil, huma.Error401Unauthorized("invalid user access")
 	}
 
 	fields := map[string]string{
-		"OldPassword": req.OldPassword,
-		"NewPassword": req.NewPassword,
+		"OldPassword": input.Body.OldPassword,
+		"NewPassword": input.Body.NewPassword,
 	}
 
 	for k, v := range fields {
@@ -310,130 +257,78 @@ func (a *AuthControllerImpl) ChangePassword(c *gin.Context) {
 			validators.WithPassword(v),
 		)
 		if err != nil {
-			utils.ResponseError(c, http.StatusBadRequest,
-				fmt.Sprintf("failed to validation %s", k),
-				err.Error(),
-				a.timeProvider,
-			)
-			return
+			return nil, huma.Error400BadRequest(fmt.Sprintf("failed to validation %s", k), err)
 		}
 	}
 
-	if req.OldPassword == req.NewPassword {
-		utils.ResponseError(c, http.StatusBadRequest,
-			"invalid request",
-			"new password must be different from old password",
-			a.timeProvider,
-		)
-		return
+	if input.Body.OldPassword == input.Body.NewPassword {
+		return nil, huma.Error400BadRequest("new password must be different from old password")
 	}
 
-	err := a.authService.ChangePassword(c, fmt.Sprintf("%d", userID.(uint)), req.OldPassword, req.NewPassword)
+	err := a.authService.ChangePassword(ctx, fmt.Sprintf("%d", userID), input.Body.OldPassword, input.Body.NewPassword)
 	if err != nil {
-		utils.ResponseError(c, http.StatusInternalServerError,
-			"failed change password",
-			err.Error(),
-			a.timeProvider,
-		)
-		return
+		if errors.Is(err, appErr.ErrUnauthorized) {
+			return nil, huma.Error401Unauthorized("invalid old password")
+		}
+		return nil, huma.Error500InternalServerError("internal server error")
 	}
 
-	utils.ResponseSuccess(c, http.StatusOK, "change password successfully", nil, a.timeProvider)
+	return &ChangePasswordOutput{
+		Body: NewSuccessBody[*struct{}]("change password successfully", nil, a.timeProvider),
+	}, nil
 }
 
-// ForgotPassword godoc
-// @Summary      パスワードリセットのトークン生成
-// @Description  パスワードリセットに使用するトークンの生成
-// @Tags         auth
-// @Accept       json
-// @Produce      json
-// @Success      200 {object} utils.SuccessResponse
-// @Failure      400 {object} utils.ErrorResponse
-// @Failure      500 {object} utils.ErrorResponse
-// @Router       /api/auth/forgot [post]
-func (a *AuthControllerImpl) ForgotPassword(c *gin.Context) {
-	var req ForgotPasswordRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		// loggerを実装予定
-		utils.ResponseError(c, http.StatusBadRequest,
-			"invalid request",
-			err.Error(),
-			a.timeProvider,
-		)
-		return
-	}
-
+func (a *AuthControllerImpl) ForgotPassword(ctx context.Context, input *ForgotPasswordInput) (*ForgotPasswordOutput, error) {
 	err := validators.NewAuthenticateValidator(
-		validators.WithEmail(req.Email),
+		validators.WithEmail(input.Body.Email),
 	)
 	if err != nil {
-		utils.ResponseError(c, http.StatusBadRequest,
-			"failed to validation",
-			err.Error(),
-			a.timeProvider,
-		)
-		return
+		return nil, huma.Error400BadRequest("failed to validation", err)
 	}
 
-	// 後工程でリセットトークンをEmailでの検証を実装する。
-	// その際にtokenを活用するよう修正予定。
-	err = a.authService.ForgotPassword(c, req.Email)
-	if err != nil {
-		utils.ResponseError(c, http.StatusInternalServerError,
-			"failed generate password reset token",
-			err.Error(),
-			a.timeProvider,
-		)
-		return
-	}
+	// ユーザー列挙攻撃を防ぐため、メールの存在有無に関わらず同一レスポンスを返す
+	_ = a.authService.ForgotPassword(ctx, input.Body.Email)
 
-	// 後工程でメール送信を実装する
-	utils.ResponseSuccess(c, http.StatusOK, "password reset email send successfully", nil, a.timeProvider)
+	return &ForgotPasswordOutput{
+		Body: NewSuccessBody[*struct{}]("if the email exists, a reset link has been sent", nil, a.timeProvider),
+	}, nil
 }
 
-// ResetPassword godoc
-// @Summary      パスワードリセット
-// @Description  トークン検証を行ってパスワードリセットを実行
-// @Tags         auth
-// @Accept       json
-// @Produce      json
-// @Success      201 {object} utils.SuccessResponse
-// @Failure      400 {object} utils.ErrorResponse
-// @Failure      500 {object} utils.ErrorResponse
-// @Router       /api/auth/reset [post]
-func (a *AuthControllerImpl) ResetPassword(c *gin.Context) {
-	var req ResetPasswordRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		// loggerを実装予定
-		utils.ResponseError(c, http.StatusBadRequest,
-			"invalid request",
-			err.Error(),
-			a.timeProvider,
-		)
-		return
-	}
-
+func (a *AuthControllerImpl) ResetPassword(ctx context.Context, input *ResetPasswordInput) (*ResetPasswordOutput, error) {
 	err := validators.NewAuthenticateValidator(
-		validators.WithPassword(req.NewPassword),
+		validators.WithPassword(input.Body.NewPassword),
 	)
 	if err != nil {
-		utils.ResponseError(c, http.StatusBadRequest,
-			"failed to validation",
-			err.Error(),
-			a.timeProvider,
-		)
-		return
+		return nil, huma.Error400BadRequest("failed to validation", err)
 	}
 
-	err = a.authService.ResetPassword(c, req.ResetToken, req.NewPassword)
+	err = a.authService.ResetPassword(ctx, input.Body.ResetToken, input.Body.NewPassword)
 	if err != nil {
-		utils.ResponseError(c, http.StatusInternalServerError,
-			"failed reset password",
-			err.Error(),
-			a.timeProvider,
-		)
-		return
+		if errors.Is(err, appErr.ErrNotFound) || errors.Is(err, appErr.ErrInvalidInput) {
+			return nil, huma.Error400BadRequest("invalid or expired reset token")
+		}
+		return nil, huma.Error500InternalServerError("internal server error")
 	}
 
-	utils.ResponseSuccess(c, http.StatusCreated, "reset password successfully", nil, a.timeProvider)
+	return &ResetPasswordOutput{
+		Body: NewSuccessBody[*struct{}]("reset password successfully", nil, a.timeProvider),
+	}, nil
+}
+
+func (a *AuthControllerImpl) GenerateCSRFToken(ctx context.Context, input *GenerateCSRFTokenInput) (*GenerateCSRFTokenOutput, error) {
+	token := a.uuidGenerator.UUIDGenerate()
+	cookie := &http.Cookie{
+		Name:     "csrf_token",
+		Value:    token,
+		MaxAge:   24 * 60 * 60,
+		Path:     "/",
+		Domain:   "localhost",
+		Secure:   true,
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+	}
+	return &GenerateCSRFTokenOutput{
+		SetCookie: cookie.String(),
+		Body:      CSRFTokenBody{Token: token},
+	}, nil
 }

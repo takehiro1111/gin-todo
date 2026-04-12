@@ -11,19 +11,9 @@ go get -u github.com/gin-gonic/gin \
   github.com/joho/godotenv \
   github.com/go-playground/validator/v10 \
   github.com/gorilla/websocket \
-  github.com/swaggo/swag \
-  github.com/swaggo/gin-swagger \
-  github.com/swaggo/files
+  github.com/danielgtaylor/huma/v2
 
-# 3. Swagger
-go get -u github.com/swaggo/swag \
-  github.com/swaggo/gin-swagger \
-  github.com/swaggo/files
-
-# 4. swagコマンドインストール
-go install github.com/swaggo/swag/cmd/swag@latest
-
-# 5. 依存関係整理
+# 3. 依存関係整理
 go mod tidy
 ```
 
@@ -498,8 +488,8 @@ psql -U gin -h localhost -d gin-todo
 - [x] `internal/validators/auth.go` - passwordCustom バリデーション（8〜24文字、英数字+記号`.?/!-`）
 - [x] `internal/validators/auth_test.go` - バリデーションテスト
 
-##### 11-3. 細かいバリデーション
-- [x] bindingタグでバリデーションのチェック
+##### 11-3. リクエストバリデーション
+- [x] Huma の構造体タグ (`required`, `maxLength` 等) でバリデーション
 ---
 
 #### 12. 管理者機能実装
@@ -575,20 +565,15 @@ psql -U gin -h localhost -d gin-todo
 
 ---
 
-# Swagger参考
-https://github.com/swaggo/swag#mime-types
+# OpenAPI ドキュメント (Huma v2)
 
-## Swagger生成
-```zsh
-cd backend
-swag init -g cmd/api/main.go -o docs
+Huma v2 により、Go の型定義から OpenAPI 3.1 スキーマが自動生成される。
+swaggo のようなコメントアノテーションは不要。
 
-# JSONのみ
-swag init --outputTypes json
-
-# YAMLのみ
-swag init --outputTypes yaml
-```
+| URL | 内容 |
+|-----|------|
+| http://localhost:8080/docs | Swagger UI |
+| http://localhost:8080/openapi.json | OpenAPI 3.1 スペック (JSON) |
 
 ## migrationで以下のエラーになった場合
 ```zsh
@@ -609,8 +594,9 @@ UPDATE 1
 docker compose exec gin-todo-postgres psql -U gin -d gin-todo
 ```
 
-## Swaggerのエンドポイント
-http://localhost:8080/swagger/index.html
+## OpenAPI ドキュメント
+- Swagger UI: http://localhost:8080/docs
+- OpenAPI Spec: http://localhost:8080/openapi.json
 
 
 ## API エンドポイント

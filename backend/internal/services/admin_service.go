@@ -9,7 +9,7 @@ import (
 
 type AdminService interface {
 	GetAllUsers(ctx context.Context) ([]models.User, error)
-	GetAllTasks(ctx context.Context) ([]models.User, error)
+	GetAllUsersWithTasks(ctx context.Context) ([]models.User, error)
 }
 
 type AdminServiceImpl struct {
@@ -31,7 +31,7 @@ func (s *AdminServiceImpl) GetAllUsers(ctx context.Context) ([]models.User, erro
 	return users, nil
 }
 
-func (s *AdminServiceImpl) GetAllTasks(ctx context.Context) ([]models.User, error) {
+func (s *AdminServiceImpl) GetAllUsersWithTasks(ctx context.Context) ([]models.User, error) {
 	users, err := s.userRepo.FindAllWithTasks(ctx)
 	if err != nil {
 		return nil, err

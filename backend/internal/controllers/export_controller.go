@@ -34,16 +34,7 @@ func NewExportControllerImpl(taskService TaskFetcher, timeProvider *utils.RealTi
 	}
 }
 
-// ExportTasksCSV godoc
-// @Summary      Task一覧のCSVエクスポート
-// @Description  Task一覧のCSVエクスポートを実行
-// @Tags         export
-// @Accept       text/csv
-// @Produce      text/csv
-// @Success      200 {object} utils.SuccessResponse
-// @Failure      401 {object} utils.ErrorResponse
-// @Failure      500 {object} utils.ErrorResponse
-// @Router       /api/tasks/export/csv [get]
+// ExportTasksCSV はログインユーザーのタスク一覧を CSV 形式でダウンロードする。
 func (e *ExportControllerImpl) ExportTasksCSV(c *gin.Context) {
 	userID, exist := c.Get("user_id")
 	if !exist {
