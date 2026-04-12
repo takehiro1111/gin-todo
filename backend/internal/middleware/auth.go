@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"context"
 	"net/http"
 	"strings"
 	"time"
@@ -8,6 +9,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/takehiro1111/gin-todo/backend/internal/utils"
 )
+
+type contextKey string
+
+const UserIDKey contextKey = "user_id"
 
 func VerifyRoleAdmin(jwtProvider utils.JWTProvider) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -35,6 +40,8 @@ func VerifyRoleAdmin(jwtProvider utils.JWTProvider) gin.HandlerFunc {
 		}
 
 		c.Set("user_id", claims.UserID) // uint
+		ctx := context.WithValue(c.Request.Context(), UserIDKey, claims.UserID)
+		c.Request = c.Request.WithContext(ctx)
 		c.Next()
 	}
 }
@@ -55,6 +62,8 @@ func VerifyUser(jwtProvider utils.JWTProvider) gin.HandlerFunc {
 		}
 
 		c.Set("user_id", claims.UserID) // uint
+		ctx := context.WithValue(c.Request.Context(), UserIDKey, claims.UserID)
+		c.Request = c.Request.WithContext(ctx)
 		c.Next()
 	}
 }

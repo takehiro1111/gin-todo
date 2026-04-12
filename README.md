@@ -15,10 +15,10 @@
 - JWT認証 (Access Token + Refresh Token)
 - WebSocket (リアルタイム通知)
 - AWS SDK v2 (SSM ParameterStore / SES)
-- Swagger / OpenAPI (swaggo)
+- Huma v2 / OpenAPI 3.1 (型駆動スキーマ生成)
 - Air (ホットリロード)
 
-### Frontend(未実装 / 使用予定の技術スタック)
+### Frontend(実装済み)
 - React
 - TypeScript
 - Vite
@@ -214,6 +214,7 @@ pnpm dev               # http://localhost:3000
 |----------|-----|
 | Frontend | http://localhost:3000 |
 | Backend API | http://localhost:8080 |
-| Swagger UI | http://localhost:8080/swagger/index.html |
+| OpenAPI Docs | http://localhost:8080/docs |
+| OpenAPI Spec | http://localhost:8080/openapi.json |
 | Adminer (DB) | http://localhost:9090 |
 | SES Local | http://localhost:8005 |

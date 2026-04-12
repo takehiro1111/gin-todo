@@ -1,13 +1,9 @@
-.PHONY: swagger.init
-swagger.init:
-	swag init -g cmd/api/main.go --parseInternal
-
 .PHONY: run
 run:
 	go run cmd/api/main.go
 
 .PHONY: dev
-dev: swagger run
+dev: run
 
 # 開発段階でのサーバ起動
 run-dev:

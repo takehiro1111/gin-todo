@@ -26,24 +26,6 @@ import (
 	"github.com/takehiro1111/gin-todo/backend/internal/websocket"
 )
 
-// @title           Todo API
-// @version         1.0
-// @description     タスク管理APIのフルスタックアプリケーション
-// @termsOfService  http://swagger.io/terms/
-
-// @contact.name   API Support
-// @contact.email  support@example.com
-
-// @license.name  MIT
-// @license.url   https://opensource.org/licenses/MIT
-
-// @host      localhost:8080
-// @BasePath  /
-
-// @securityDefinitions.apikey BearerAuth
-// @in header
-// @name Authorization
-// @description Type "Bearer" followed by a space and JWT token.
 func main() {
 	r := gin.New()
 
@@ -75,8 +57,6 @@ func main() {
 
 	// フィールドを持たないのでファクトリーメソッドは実装してない
 	uuidGenerator := &utils.UUIDGeneratorImpl{}
-
-	csrfTokenProvider := middleware.NewCSRFUUIDProvider(uuidGenerator)
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
 	defer stop()
@@ -177,7 +157,7 @@ func main() {
 	taskService := services.NewTaskService(taskRepo)
 
 	adminCtrl := controllers.NewAdminControllerImpl(adminService, timeProvider)
-	authCtrl := controllers.NewAuthControllerImpl(authService, timeProvider)
+	authCtrl := controllers.NewAuthControllerImpl(authService, timeProvider, uuidGenerator)
 	taskCtrl := controllers.NewTaskControllerImpl(taskService, timeProvider)
 	exportCtrl := controllers.NewExportControllerImpl(taskService, timeProvider)
 
@@ -200,7 +180,7 @@ func main() {
 	})
 	go wsHub.Run()
 
-	routes.SetupRoutes(r, adminCtrl, authCtrl, taskCtrl, exportCtrl, jwtProvider, wsHub, csrfTokenProvider)
+	routes.SetupRoutes(r, adminCtrl, authCtrl, taskCtrl, exportCtrl, jwtProvider, wsHub)
 
 	srv := &http.Server{
 		Addr:    ":8080",

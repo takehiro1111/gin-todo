@@ -1,17 +1,19 @@
 package controllers
 
 import (
-	"net/http"
+	"context"
 
-	"github.com/gin-gonic/gin"
+	"github.com/danielgtaylor/huma/v2"
 
+	"github.com/takehiro1111/gin-todo/backend/internal/middleware"
+	"github.com/takehiro1111/gin-todo/backend/internal/models"
 	"github.com/takehiro1111/gin-todo/backend/internal/services"
 	"github.com/takehiro1111/gin-todo/backend/internal/utils"
 )
 
 type AdminController interface {
-	GetAllUsers(c *gin.Context)
-	GetAllTasks(c *gin.Context)
+	GetAllUsers(ctx context.Context, input *GetAllUsersInput) (*GetAllUsersOutput, error)
+	GetAllUsersWithTasks(ctx context.Context, input *GetAllUsersWithTasksInput) (*GetAllUsersWithTasksOutput, error)
 }
 
 type AdminControllerImpl struct {
@@ -26,74 +28,50 @@ func NewAdminControllerImpl(adminService services.AdminService, timeProvider *ut
 	}
 }
 
-// GetAllUsers godoc
-// @Summary      全ユーザー一覧取得
-// @Description  管理者権限で全ユーザーの一覧を取得する
-// @Tags         admin
-// @Accept       json
-// @Produce      json
-// @Success      200 {object} utils.SuccessResponse
-// @Failure      401 {object} utils.ErrorResponse
-// @Failure      403 {object} utils.ErrorResponse
-// @Failure      500 {object} utils.ErrorResponse
-// @Security     BearerAuth
-// @Router       /api/admin/users [get]
-func (a *AdminControllerImpl) GetAllUsers(c *gin.Context) {
-	_, exist := c.Get("user_id")
-	if !exist {
-		utils.ResponseError(c, http.StatusUnauthorized,
-			"invalid user access",
-			"userID not found in context",
-			a.timeProvider,
-		)
-		return
-	}
+// --- Input / Output ---
 
-	users, err := a.adminService.GetAllUsers(c)
-	if err != nil {
-		utils.ResponseError(c, http.StatusInternalServerError,
-			"failed get users",
-			err.Error(),
-			a.timeProvider,
-		)
-		return
-	}
+type GetAllUsersInput struct{}
 
-	utils.ResponseSuccess(c, http.StatusOK, "success get all users", users, a.timeProvider)
+type GetAllUsersOutput struct {
+	Body SuccessBody[[]models.User]
 }
 
-// GetAllTasks godoc
-// @Summary      全タスク一覧取得
-// @Description  管理者権限で全ユーザーのタスク一覧を取得する
-// @Tags         admin
-// @Accept       json
-// @Produce      json
-// @Success      200 {object} utils.SuccessResponse
-// @Failure      401 {object} utils.ErrorResponse
-// @Failure      403 {object} utils.ErrorResponse
-// @Failure      500 {object} utils.ErrorResponse
-// @Security     BearerAuth
-// @Router       /api/admin/tasks [get]
-func (a *AdminControllerImpl) GetAllTasks(c *gin.Context) {
-	_, exist := c.Get("user_id")
-	if !exist {
-		utils.ResponseError(c, http.StatusUnauthorized,
-			"invalid user access",
-			"userID not found in context",
-			a.timeProvider,
-		)
-		return
+type GetAllUsersWithTasksInput struct{}
+
+type GetAllUsersWithTasksOutput struct {
+	Body SuccessBody[[]models.User]
+}
+
+// --- Handlers ---
+
+func (a *AdminControllerImpl) GetAllUsers(ctx context.Context, input *GetAllUsersInput) (*GetAllUsersOutput, error) {
+	_, ok := ctx.Value(middleware.UserIDKey).(uint)
+	if !ok {
+		return nil, huma.Error401Unauthorized("invalid user access")
 	}
 
-	users, err := a.adminService.GetAllTasks(c)
+	users, err := a.adminService.GetAllUsers(ctx)
 	if err != nil {
-		utils.ResponseError(c, http.StatusInternalServerError,
-			"failed get tasks",
-			err.Error(),
-			a.timeProvider,
-		)
-		return
+		return nil, huma.Error500InternalServerError("internal server error")
 	}
 
-	utils.ResponseSuccess(c, http.StatusOK, "success get tasks", users, a.timeProvider)
+	return &GetAllUsersOutput{
+		Body: NewSuccessBody[[]models.User]("success get all users", users, a.timeProvider),
+	}, nil
+}
+
+func (a *AdminControllerImpl) GetAllUsersWithTasks(ctx context.Context, input *GetAllUsersWithTasksInput) (*GetAllUsersWithTasksOutput, error) {
+	_, ok := ctx.Value(middleware.UserIDKey).(uint)
+	if !ok {
+		return nil, huma.Error401Unauthorized("invalid user access")
+	}
+
+	users, err := a.adminService.GetAllUsersWithTasks(ctx)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("internal server error")
+	}
+
+	return &GetAllUsersWithTasksOutput{
+		Body: NewSuccessBody[[]models.User]("success get all users with tasks", users, a.timeProvider),
+	}, nil
 }
